@@ -4,11 +4,10 @@ from typing import Any
 from marshmallow import Schema, fields, post_load
 from marshmallow_enum import EnumField
 
-from gator.models.timetable import (Campus, Course, CourseTerm, Instructor,
-                                    MeetingDay, Organisation, Section,
-                                    SectionDeliveryMode, SectionMeeting,
-                                    SectionTeachingMethod)
-from gator.schemas.common import TimeSchema
+from gator.core.models.timetable import (
+    Campus, Course, CourseTerm, Instructor, MeetingDay, Organisation, Section,
+    SectionDeliveryMode, SectionMeeting, SectionTeachingMethod)
+from gator.core.schemas.common import TimeSchema
 
 
 class SectionMeetingSchema(Schema):

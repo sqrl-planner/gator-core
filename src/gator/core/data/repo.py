@@ -11,9 +11,9 @@ from typing import Any, Callable, Iterator, Optional, get_type_hints
 import yaml
 from routes import Mapper
 
-from gator.data.dataset import Dataset
-from gator.models.common import Record
-from gator.data.utils.serialization import without_keys
+from gator.core.data.dataset import Dataset
+from gator.core.models.common import Record
+from gator.core.data.utils.serialization import without_keys
 
 
 @dataclass

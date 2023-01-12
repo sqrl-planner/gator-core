@@ -1,7 +1,7 @@
 """All defined repositories for implementing data providers."""
-from gator.data.repo import Repository, RepositoryRegistry
-from gator.data.providers.uoft.utsg import UtsgArtsciTimetableDataset
-from gator.models.timetable import Session
+from gator.core.data.repo import Repository, RepositoryRegistry
+from gator.core.data.providers.uoft.utsg import UtsgArtsciTimetableDataset
+from gator.core.models.timetable import Session
 
 repo_registry = RepositoryRegistry()
 

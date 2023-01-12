@@ -7,8 +7,8 @@ from typing import Optional
 
 import mongoengine as db
 
-from gator.models.base_types import SerializableEnum
-from gator.models.common import Time
+from gator.core.models.base_types import SerializableEnum
+from gator.core.models.common import Time
 
 
 class MeetingDay(SerializableEnum):

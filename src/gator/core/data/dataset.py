@@ -3,8 +3,8 @@
 from typing import Union, Optional
 from abc import ABC, abstractmethod, abstractclassmethod
 
-from gator.models.common import Record
-from gator.models.timetable import Session
+from gator.core.models.common import Record
+from gator.core.models.timetable import Session
 
 
 class Dataset(ABC):

@@ -3,7 +3,7 @@ from typing import Any
 
 from marshmallow import Schema, fields, post_load
 
-from gator.models.common import Time
+from gator.core.models.common import Time
 
 
 class TimeSchema(Schema):
