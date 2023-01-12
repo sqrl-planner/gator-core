@@ -1,4 +1,4 @@
-# gator-models
+# gator-core
  A dataset aggregation framework for Sqrl Planner.
 
 ## Tools
