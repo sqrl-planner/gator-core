@@ -90,8 +90,8 @@ class CourseSchema(Schema):
     recommended_preparation = fields.String()
     breadth_categories = fields.String()
     distribution_categories = fields.String()
-    web_timetable_instructions = fields.String()
-    delivery_instructions = fields.String()
+    web_timetable_instructions = fields.String(load_default=None)
+    delivery_instructions = fields.String(load_default=None)
     campus = EnumField(Campus)
 
     @post_load
