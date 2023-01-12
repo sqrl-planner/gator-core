@@ -1,13 +1,5 @@
 # gator-models
-MongoDB models for Gator API
-
-## Package manager
-Gator-models uses the [poetry](https://python-poetry.org/) package manager to manage its dependencies. To install the dependencies, run the following command:
-```
-poetry install
-```
-See the [poetry](https://python-poetry.org/) documentation for more information and
-installation instructions.
+ A dataset aggregation framework for Sqrl Planner.
 
 ## Tools
 

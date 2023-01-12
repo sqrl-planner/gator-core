@@ -1,12 +1,14 @@
 [tool.poetry]
-name = "gator-models"
+name = "gator-core"
 version = "0.0.0"  # placeholder for the real version, which is retrieved from git tags
-description = "MongoDB models for Gator API"
+description = "A dataset aggregation framework for Sqrl Planner."
 authors = ["Shon Verch <verchshon@gmail.com>"]
-packages = [
-    { include = "gator" }
-]
+license = "MIT"
 readme = "README.md"
+
+packages = [
+    { include = "gator", from = "src" }
+]
 
 [tool.poetry.dependencies]
 python = "^3.9"
@@ -15,10 +17,11 @@ marshmallow = "^3.17.0"
 marshmallow-enum = "^1.5.1"
 
 [tool.poetry.dev-dependencies]
-pydocstyle = "^6.1.1"
-flake8 = "^4.0.1"
-autopep8 = "^1.6.0"
-isort = "^5.10.1"
+pre-commit = "^2.20.0"
+pytest = "^7.1.2"
+pytest-cov = "^3.0.0"
+pytest-mock = "^3.7.0"
+pytest-httpserver = "^1.0.4"
 
 [tool.poetry-dynamic-versioning]
 enable = true
