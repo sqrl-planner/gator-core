@@ -1,4 +1,4 @@
-"""Test the :mod:`gator.data.utils.io` module."""
+"""Test the :mod:`gator.core.data.utils.io` module."""
 import json
 import math
 import random
@@ -9,11 +9,11 @@ from pytest_httpserver import HTTPServer
 from pytest_mock import MockerFixture
 from werkzeug import Request, Response
 
-from gator.core.data.utils.io import stream_file, http_request
+from gator.core.data.utils.io import http_request, stream_file
 
 
 class TestStreamFile:
-    """Test the :meth:`gator.data.utils.io.stream_file` function.
+    """Test the :meth:`gator.core.data.utils.io.stream_file` function.
 
     Class Attributes:
         EXAMPLE_FILE_DATA: The data to use for the mocked file.
@@ -26,15 +26,14 @@ class TestStreamFile:
     def mock_byte_file(cls, mocker: MockerFixture) -> None:
         """Fixture that mocks the `open` builtin with bytes data."""
         mocker.patch('builtins.open',
-                    mocker.mock_open(read_data=cls.EXAMPLE_FILE_DATA))
-
+                     mocker.mock_open(read_data=cls.EXAMPLE_FILE_DATA))
 
     @classmethod
     @pytest.fixture
     def mock_text_file(cls, mocker: MockerFixture) -> None:
         """Fixture that mocks the `open` builtin with text data."""
         mocker.patch('builtins.open',
-                    mocker.mock_open(read_data=cls.EXAMPLE_FILE_DATA.decode()))
+                     mocker.mock_open(read_data=cls.EXAMPLE_FILE_DATA.decode()))
 
     @pytest.mark.usefixtures('mock_byte_file')
     def test_rb_stream_1(self) -> None:
@@ -77,12 +76,12 @@ class TestStreamFile:
         Use a chunk size larger than the file size.
         """
         data = list(stream_file('test.txt',
-                                 chunk_size=len(self.EXAMPLE_FILE_DATA) + 1))
+                                chunk_size=len(self.EXAMPLE_FILE_DATA) + 1))
         assert data == [self.EXAMPLE_FILE_DATA.decode('utf-8')]
 
 
 class TestHttpRequest:
-    """Test the :meth:`gator.data.utils.io.http_request` function.
+    """Test the :meth:`gator.core.data.utils.io.http_request` function.
 
     Class Attributes:
         SMALL_HTML: The contents of a small page for testing.
@@ -193,8 +192,7 @@ class TestHttpRequest:
         assert total_size == self.LARGE_HTML_SIZE
 
         assert chunks == [self.LARGE_HTML_FULL_DATA[i:i + 32]
-                        for i in range(0, self.LARGE_HTML_SIZE, 32)]
-
+                          for i in range(0, self.LARGE_HTML_SIZE, 32)]
 
     @pytest.mark.usefixtures('http_server')
     def test_post(self, http_server: HTTPServer) -> None:

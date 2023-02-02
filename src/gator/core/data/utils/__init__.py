@@ -1,1 +1,1 @@
-"""Utilities and helpers for the :mod:`gator.data` module."""
+"""Utilities and helpers for the :mod:`gator.core.data` module."""
