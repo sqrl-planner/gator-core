@@ -1,7 +1,7 @@
 # type: ignore
 """Base classes for a datasets."""
 import fnmatch
-from typing import Union, Optional, Iterator
+from typing import Union, Optional, Iterator, Type, Any
 from abc import ABC, abstractmethod, abstractclassmethod, abstractproperty
 
 from gator.core.models.common import Record
@@ -20,7 +20,6 @@ class Dataset(ABC):
     def slug(self) -> str:
         """Return the slug of this dataset."""
         raise NotImplementedError()
-
 
     @abstractproperty
     def name(self) -> str:
@@ -84,6 +83,7 @@ class Registry:
     Each dataset is identified by a unique slug. The registry can be used to
     retrieve datasets by their slug, or to filter datasets by a pattern.
     """
+
     # Private Instance Attributes:
     #     _datasets: A list of datasets to track.
     _datasets: list[Dataset]
