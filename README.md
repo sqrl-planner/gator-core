@@ -1,3 +1,5 @@
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/sqrl-planner/gator-core/main.svg)](https://results.pre-commit.ci/latest/github/sqrl-planner/gator-core/main)
+
 # gator-core
  A dataset aggregation framework for Sqrl Planner.
 
