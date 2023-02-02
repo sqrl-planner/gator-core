@@ -33,3 +33,31 @@ class Record(db.Document):
     updated_at: Time = db.DateTimeField(required=True, default=datetime.datetime.now)
     hash: str = db.StringField(required=True, unique=True)
     name: str = db.StringField(required=False)
+
+    def sync(self, force: bool = False) -> str:
+        """Sync the record with the database.
+
+        Args:
+            force: If True, force the sync even if the data is already up-to-date.
+
+        Returns:
+            One of 'created', 'updated', or 'skipped'.
+        """
+        # TODO: Better syncing logic that can handle batch updates
+
+        # Check if the record is already in the database
+        record = Record.objects(id=self.id).first()
+        if record is None:
+            # Create a new record
+            self.save(cascade=True)
+            return 'created'
+        elif force or record.hash != self.hash:
+            # Update the record
+            record.doc = self.doc
+            record.updated_at = datetime.datetime.now()
+            record.hash = self.hash
+            record.save(cascade=True)
+            return 'updated'
+        else:
+            # Skip the record
+            return 'skipped'
