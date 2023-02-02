@@ -9,7 +9,7 @@ from pytest_httpserver import HTTPServer
 from pytest_mock import MockerFixture
 from werkzeug import Request, Response
 
-from gator.core.data.utils.io import stream_file, http_request
+from gator.core.data.utils.io import http_request, stream_file
 
 
 class TestStreamFile:

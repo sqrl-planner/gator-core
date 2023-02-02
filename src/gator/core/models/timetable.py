@@ -123,8 +123,14 @@ class Section(db.EmbeddedDocument):
 
         This is a combination of the teaching method and the section
         number, separated by a hyphen.
+
+        If the teaching method is None, then the section number is returned
+        instead.
         """
-        return f'{self.teaching_method.value}-{self.section_number}'
+        if self.teaching_method is None:
+            return self.section_number
+        else:
+            return f'{self.teaching_method.value}-{self.section_number}'
 
 
 class CourseTerm(SerializableEnum):
@@ -301,9 +307,15 @@ class Course(db.Document):
     @property
     @lru_cache
     def level(self) -> int:
-        """Return the level of this course."""
+        """Return the level of this course.
+
+        If the course is not a level course, return 0.
+        """
         m = re.search(r'(?:[^\d]*)(\d+)', self.code)
-        return int(math.floor(int(m.group(1)) / 100.0)) * 100
+        if not m:
+            return 0
+        else:
+            return int(math.floor(int(m.group(1)) / 100.0)) * 100
 
     @property
     @lru_cache

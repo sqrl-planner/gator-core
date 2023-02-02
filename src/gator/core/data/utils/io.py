@@ -2,7 +2,7 @@
 """Utilities for performing I/O operations."""
 import json as jsonlib
 from pathlib import Path
-from typing import Any, Optional, Union, Generator
+from typing import Any, Generator, Optional, Union
 
 import requests
 

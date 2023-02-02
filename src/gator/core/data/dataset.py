@@ -1,8 +1,8 @@
 # type: ignore
 """Base classes for a datasets."""
 import fnmatch
-from typing import Union, Optional, Iterator, Type, Any
-from abc import ABC, abstractmethod, abstractclassmethod, abstractproperty
+from abc import ABC, abstractclassmethod, abstractmethod, abstractproperty
+from typing import Any, Iterator, Optional, Type, Union
 
 from gator.core.models.common import Record
 from gator.core.models.timetable import Session
