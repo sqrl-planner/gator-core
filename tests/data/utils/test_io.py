@@ -26,15 +26,14 @@ class TestStreamFile:
     def mock_byte_file(cls, mocker: MockerFixture) -> None:
         """Fixture that mocks the `open` builtin with bytes data."""
         mocker.patch('builtins.open',
-                    mocker.mock_open(read_data=cls.EXAMPLE_FILE_DATA))
-
+                     mocker.mock_open(read_data=cls.EXAMPLE_FILE_DATA))
 
     @classmethod
     @pytest.fixture
     def mock_text_file(cls, mocker: MockerFixture) -> None:
         """Fixture that mocks the `open` builtin with text data."""
         mocker.patch('builtins.open',
-                    mocker.mock_open(read_data=cls.EXAMPLE_FILE_DATA.decode()))
+                     mocker.mock_open(read_data=cls.EXAMPLE_FILE_DATA.decode()))
 
     @pytest.mark.usefixtures('mock_byte_file')
     def test_rb_stream_1(self) -> None:
@@ -77,7 +76,7 @@ class TestStreamFile:
         Use a chunk size larger than the file size.
         """
         data = list(stream_file('test.txt',
-                                 chunk_size=len(self.EXAMPLE_FILE_DATA) + 1))
+                                chunk_size=len(self.EXAMPLE_FILE_DATA) + 1))
         assert data == [self.EXAMPLE_FILE_DATA.decode('utf-8')]
 
 
@@ -193,8 +192,7 @@ class TestHttpRequest:
         assert total_size == self.LARGE_HTML_SIZE
 
         assert chunks == [self.LARGE_HTML_FULL_DATA[i:i + 32]
-                        for i in range(0, self.LARGE_HTML_SIZE, 32)]
-
+                          for i in range(0, self.LARGE_HTML_SIZE, 32)]
 
     @pytest.mark.usefixtures('http_server')
     def test_post(self, http_server: HTTPServer) -> None:
