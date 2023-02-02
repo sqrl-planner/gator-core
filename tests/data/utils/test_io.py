@@ -1,4 +1,4 @@
-"""Test the :mod:`gator.data.utils.io` module."""
+"""Test the :mod:`gator.core.data.utils.io` module."""
 import json
 import math
 import random
@@ -13,7 +13,7 @@ from gator.core.data.utils.io import stream_file, http_request
 
 
 class TestStreamFile:
-    """Test the :meth:`gator.data.utils.io.stream_file` function.
+    """Test the :meth:`gator.core.data.utils.io.stream_file` function.
 
     Class Attributes:
         EXAMPLE_FILE_DATA: The data to use for the mocked file.
@@ -82,7 +82,7 @@ class TestStreamFile:
 
 
 class TestHttpRequest:
-    """Test the :meth:`gator.data.utils.io.http_request` function.
+    """Test the :meth:`gator.core.data.utils.io.http_request` function.
 
     Class Attributes:
         SMALL_HTML: The contents of a small page for testing.
