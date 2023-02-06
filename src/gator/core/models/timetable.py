@@ -163,7 +163,7 @@ class Organisation(db.Document):
     campus: Campus = db.EnumField(Campus, required=True)
 
 
-@dataclass
+@dataclass(frozen=True, eq=True)
 class Session:
     """A class representing a session of a calendar year.
 
