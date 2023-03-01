@@ -7,40 +7,113 @@ from typing import Optional
 
 import mongoengine as db
 
-from gator.core.models.base_types import SerializableEnum
-from gator.core.models.common import Time
+from gator.core.models.common import SerializableEnum
 
 
-class MeetingDay(SerializableEnum):
-    """A class representing the day of the week."""
+class Campus(SerializableEnum):
+    """University campus."""
 
-    MONDAY = 'MO'
-    TUESDAY = 'TU'
-    WEDNESDAY = 'WE'
-    THURSDAY = 'TH'
-    FRIDAY = 'FR'
-    SATURDAY = 'SA'
-    SUNDAY = 'SU'
+    ST_GEORGE = 'UTSG'
+    SCARBOROUGH = 'UTSC'
+    MISSISSAUGA = 'UTM'
+
+
+class Building(db.Document):
+    """A class representing a building on campus.
+
+    Instance Attributes:
+        code: A unique string code that identifies this building.
+        campus: The campus that this building is on.
+        name: The name of this building. Can be None if unknown.
+        map_url: The URL of this building's map. Can be None if unknown.
+        campus: The campus that this building is on.
+    """
+
+    code: str = db.StringField(unique=True, primary_key=True)
+    campus: Campus = db.EnumField(Campus)
+    name: Optional[str] = db.StringField(required=False, default=None)
+    map_url: Optional[str] = db.URLField(required=False, default=None)
+
+
+class Location(db.EmbeddedDocument):
+    """A class representing a location on campus as a building-room pair.
+
+    Instance Attributes:
+        building: The building that the section meets in.
+        room: The room that the section meets in, not including the building
+            code.
+    """
+
+    building: Building = db.ReferenceField(Building, required=True)
+    room: str = db.StringField(required=True)
+
+
+class WeeklyRepetitionSchedule(db.EmbeddedDocument):
+    """A class representing a weekly schedule for a repeating event.
+
+    This is represented as an integer whose binary representation is
+    interpreted as a set of :math:`k` bits, where :math:`k` is the number of
+    weeks in a single repeating period. The :math:`i`-th bit is 1 if the
+    meeting occurs in the :math:`i`-th week of the repeating period, and 0
+    otherwise. For example, if a meeting occurs every week, then :math:`k = 1`
+    and the bit is `1`. If a meeting occurs every other week, then
+    :math:`k = 2` and the bits are `10`.
+
+    Instance Attributes:
+        schedule: The integer representing the repetition schedule.
+    """
+
+    schedule: int = db.IntField(required=True, min_value=1, default=1)
+
+    @property
+    def is_alternating(self) -> bool:
+        """Whether this meeting does not regularly occur every week.
+
+        A schedule is alternating (i.e. does not occur every week) if there is
+        at least one week :math:`i` such that the :math:`i`-th bit is 0.
+        """
+        k = math.ceil(math.log2(self.repetition_schedule))
+        return self.repetition_schedule > 1 and self.repetition_schedule != (1 << k) - 1
+
+    def to_dict(self) -> dict:
+        """Convert this object to a dictionary.
+
+        Returns:
+            A dictionary representation of this object, with two additional
+            keys: `schedule_bits` and `is_alternating`.
+        """
+        return {
+            'schedule': self.schedule,
+            'schedule_bits': bin(self.schedule)[2:],  # Remove the '0b' prefix
+            'is_alternating': self.is_alternating
+        }
 
 
 class SectionMeeting(db.EmbeddedDocument):
     """A class representing a meeting of a section.
 
     Instance Attributes:
-        day: The day of this meeting.
-        start_time: The start time of this meeting.
-        end_time: The end time of this meeting.
-        assigned_room_1: A string representing the first assigned room for this
-            meeting, or None if there is no first assigned room.
-        assigned_room_2: A string representing the second assigned room for
-            this meeting, or None if there is no second assigned room.
+        day: The day of the week that this meeting occurs on, represented as an
+            integer, where Monday is 0 and Sunday is 6.
+        start_time: The time that this meeting starts, represented as the number
+            of milliseconds since midnight(00:00:00).
+        end_time: The time that this meeting ends, represented as the number of
+            milliseconds since midnight (00:00:00).
+        terms: The terms that this meeting occurs in.
+        location: The location of this meeting, or None if this meeting has no
+            assigned location.
+        repetition_schedule: The repetition schedule of this meeting. Defaults
+            to a schedule that occurs every week.
     """
 
-    day: MeetingDay = db.EnumField(MeetingDay, required=True)
-    start_time: Time = db.EmbeddedDocumentField(Time, required=True)
-    end_time: Time = db.EmbeddedDocumentField(Time, required=True)
-    assigned_room_1: Optional[str] = db.StringField(null=True)
-    assigned_room_2: Optional[str] = db.StringField(null=True)
+    day: int = db.IntField(required=True, min_value=0, max_value=6)
+    start_time: int = db.IntField(required=True, min_value=0, max_value=86400000)
+    end_time: int = db.IntField(required=True, min_value=0, max_value=86400000)
+    terms: list[Term] = db.ListField(db.ReferenceField(Term), required=True)
+    location: Optional[Location] = db.EmbeddedDocumentField(
+        Location, required=False, default=None)
+    repetition_schedule: WeeklyRepetitionSchedule = db.EmbeddedDocumentField(
+        WeeklyRepetitionSchedule, required=True, default=WeeklyRepetitionSchedule())
 
 
 class SectionTeachingMethod(SerializableEnum):
@@ -69,7 +142,6 @@ class Instructor(db.EmbeddedDocument):
     """A class representing a course instructor.
 
     Instance Attributes:
-        id: A unique integer id representing this instructor.
         first_name: The first name of this instructor.
         last_name: The last name of this instructor.
     """
@@ -78,44 +150,67 @@ class Instructor(db.EmbeddedDocument):
     last_name: str = db.StringField(required=True)
 
 
-class Section(db.EmbeddedDocument):
-    """A class representing a course section/meeting.
+class EnrolmentInfo(db.EmbeddedDocument):
+    """A class representing enrolment information for a section.
 
     Instance Attributes:
-        teaching_method: The teaching method for this section, or None if this
-            section has no teaching method.
-        section_number: The number of this section, representing as a string.
-        subtitle: The section subtitle, or None if there is no subtitle.
-        instructors: A list of instructors teaching this section.
-        meetings: A list of meetings available for this section.
-        delivery_mode: The delivery mode for this section, or None if this
-            section has no delivery mode.
-        cancelled: Whether this section is cancelled.
+        current_enrolment: The number of students currently enrolled in this
+            section.
+        max_enrolment: The maximum number of students that can be enrolled in
+            this section.
         has_waitlist: Whether this section has a waitlist.
-        enrolment_capacity: The total number of students that can be enrolled
-            in this section.
-        actual_enrolment: The number of students enrolled in this section.
-        actual_waitlist: The number of students waitlisted for this section.
+        current_waitlist: The number of students currently on the waitlist for
+            this section.
         enrolment_indicator: A string representing the enrollment indicator
             for this section, or None if there is no enrollment indicator.
     """
 
-    teaching_method: Optional[SectionTeachingMethod] = db.EnumField(
-        SectionTeachingMethod, null=True
-    )
-    section_number: str = db.StringField()
-    subtitle: Optional[str] = db.StringField(null=True)
-    instructors: list[Instructor] = db.EmbeddedDocumentListField('Instructor')
-    meetings: list[SectionMeeting] = db.EmbeddedDocumentListField(
-        'SectionMeeting')
-    delivery_mode: Optional[SectionDeliveryMode] = db.EnumField(
-        SectionDeliveryMode, null=True)
-    cancelled: bool = db.BooleanField()
-    has_waitlist: bool = db.BooleanField()
-    enrolment_capacity: Optional[int] = db.IntField(null=True)
-    actual_enrolment: Optional[int] = db.IntField(null=True)
-    actual_waitlist: Optional[int] = db.IntField(null=True)
+    current_enrolment: Optional[int] = db.IntField(null=True)
+    max_enrolment: Optional[int] = db.IntField(null=True)
+    has_waitlist: Optional[bool] = db.BooleanField(default=False)
+    current_waitlist: Optional[int] = db.IntField(null=True)
     enrolment_indicator: Optional[str] = db.StringField(null=True)
+    # TODO: Add enrolment controls
+
+
+class Section(db.EmbeddedDocument):
+    """A class representing a course section/meeting.
+
+    Instance Attributes:
+        teaching_method: The teaching method for this section.
+        section_number: The number of this section, represented as a string.
+        meetings: A list of meetings available for this section.
+        instructors: A list of instructors teaching this section.
+        current_enrolment: The number of students currently enrolled in this
+            section.
+        max_enrolment: The maximum number of students that can be enrolled in
+            this section.
+        subtitle: The subtitle of this section, or None if there is no subtitle.
+            Among other things, this is used to distinguish between the content
+            matter when a course offers curriculum on multiple topics. For
+            example, an introductory algorithms course might have a section
+            that uses Python and another section that uses Java.
+        cancelled: Whether this section is cancelled.
+        delivery_modes: A list of delivery modes for this section. The i-th
+            element of this list corresponds to the delivery mode in the
+            i-th term that the course runs in.
+        enrolment_info: The enrolment information for this section.
+        notes: A list of HTML strings.
+    """
+
+    teaching_method: SectionTeachingMethod = db.EnumField(SectionTeachingMethod)
+    section_number: str = db.StringField()
+    meetings: list[SectionMeeting] = db.EmbeddedDocumentListField('SectionMeeting')
+    instructors: list[Instructor] = db.EmbeddedDocumentListField('Instructor')
+    subtitle: Optional[str] = db.StringField(null=True)
+    cancelled: bool = db.BooleanField()
+    delivery_modes: list[SectionDeliveryMode] = db.ListField(db.EnumField(SectionDeliveryMode))
+    enrolment_info: EnrolmentInfo = db.EmbeddedDocumentField(EnrolmentInfo)
+    notes: Optional[list[str]] = db.ListField(db.StringField())
+    linked_sections: Optional[list[str]] = db.ListField(db.StringField())
+    # TODO: Section dependencies. This should be represented as a graph, where
+    # each node is a section and each edge is a dependency (which may or may not
+    # be bidirectional).
 
     @property
     def code(self) -> str:
@@ -139,14 +234,6 @@ class CourseTerm(SerializableEnum):
     FIRST_SEMESTER = 'F'
     SECOND_SEMESTER = 'S'
     FULL_YEAR = 'Y'
-
-
-class Campus(SerializableEnum):
-    """University campus."""
-
-    ST_GEORGE = 'UTSG'
-    SCARBOROUGH = 'UTSC'
-    MISSISSAUGA = 'UTM'
 
 
 class Organisation(db.Document):
