@@ -5,21 +5,21 @@ from dataclasses import dataclass
 from functools import lru_cache
 from typing import Optional
 
-import mongoengine as db
+from mongoengine import Document, EmbeddedDocument, fields
 
 from gator.core.models.common import SerializableEnum
 
 
 class Campus(SerializableEnum):
-    """University campus."""
+    """The different campuses of the University of Toronto."""
 
     ST_GEORGE = 'UTSG'
     SCARBOROUGH = 'UTSC'
     MISSISSAUGA = 'UTM'
 
 
-class Building(db.Document):
-    """A class representing a building on campus.
+class Building(Document):
+    """A building on a campus of the University of Toronto.
 
     Instance Attributes:
         code: A unique string code that identifies this building.
@@ -29,14 +29,14 @@ class Building(db.Document):
         campus: The campus that this building is on.
     """
 
-    code: str = db.StringField(unique=True, primary_key=True)
-    campus: Campus = db.EnumField(Campus)
-    name: Optional[str] = db.StringField(required=False, default=None)
-    map_url: Optional[str] = db.URLField(required=False, default=None)
+    code: str = fields.StringField(unique=True, primary_key=True)
+    campus: Campus = fields.EnumField(Campus)
+    name: Optional[str] = fields.StringField(required=False, default=None)
+    map_url: Optional[str] = fields.URLField(required=False, default=None)
 
 
-class Location(db.EmbeddedDocument):
-    """A class representing a location on campus as a building-room pair.
+class Location(EmbeddedDocument):
+    """A location on campus represented as a building-room pair.
 
     Instance Attributes:
         building: The building that the section meets in.
@@ -44,14 +44,14 @@ class Location(db.EmbeddedDocument):
             code.
     """
 
-    building: Building = db.ReferenceField(Building, required=True)
-    room: str = db.StringField(required=True)
+    building: Building = fields.ReferenceField(Building, required=True)
+    room: str = fields.StringField(required=True)
 
 
-class WeeklyRepetitionSchedule(db.EmbeddedDocument):
-    """A class representing a weekly schedule for a repeating event.
+class WeeklyRepetitionSchedule(EmbeddedDocument):
+    """A schedule for an event that repeats weekly.
 
-    This is represented as an integer whose binary representation is
+    Represented as an integer whose binary representation is
     interpreted as a set of :math:`k` bits, where :math:`k` is the number of
     weeks in a single repeating period. The :math:`i`-th bit is 1 if the
     meeting occurs in the :math:`i`-th week of the repeating period, and 0
@@ -63,7 +63,7 @@ class WeeklyRepetitionSchedule(db.EmbeddedDocument):
         schedule: The integer representing the repetition schedule.
     """
 
-    schedule: int = db.IntField(required=True, min_value=1, default=1)
+    schedule: int = fields.IntField(required=True, min_value=1, default=1)
 
     @property
     def is_alternating(self) -> bool:
@@ -72,8 +72,8 @@ class WeeklyRepetitionSchedule(db.EmbeddedDocument):
         A schedule is alternating (i.e. does not occur every week) if there is
         at least one week :math:`i` such that the :math:`i`-th bit is 0.
         """
-        k = math.ceil(math.log2(self.repetition_schedule))
-        return self.repetition_schedule > 1 and self.repetition_schedule != (1 << k) - 1
+        k = math.ceil(math.log2(self.schedule))
+        return self.schedule > 1 and self.schedule != (1 << k) - 1
 
     def to_dict(self) -> dict:
         """Convert this object to a dictionary.
@@ -89,7 +89,7 @@ class WeeklyRepetitionSchedule(db.EmbeddedDocument):
         }
 
 
-class SectionMeeting(db.EmbeddedDocument):
+class SectionMeeting(EmbeddedDocument):
     """A class representing a meeting of a section.
 
     Instance Attributes:
@@ -106,13 +106,13 @@ class SectionMeeting(db.EmbeddedDocument):
             to a schedule that occurs every week.
     """
 
-    day: int = db.IntField(required=True, min_value=0, max_value=6)
-    start_time: int = db.IntField(required=True, min_value=0, max_value=86400000)
-    end_time: int = db.IntField(required=True, min_value=0, max_value=86400000)
-    terms: list[Term] = db.ListField(db.ReferenceField(Term), required=True)
-    location: Optional[Location] = db.EmbeddedDocumentField(
+    day: int = fields.IntField(required=True, min_value=0, max_value=6)
+    start_time: int = fields.IntField(required=True, min_value=0, max_value=86400000)
+    end_time: int = fields.IntField(required=True, min_value=0, max_value=86400000)
+    terms: list[Term] = fields.ListField(fields.ReferenceField(Term), required=True)
+    location: Optional[Location] = fields.EmbeddedDocumentField(
         Location, required=False, default=None)
-    repetition_schedule: WeeklyRepetitionSchedule = db.EmbeddedDocumentField(
+    repetition_schedule: WeeklyRepetitionSchedule = fields.EmbeddedDocumentField(
         WeeklyRepetitionSchedule, required=True, default=WeeklyRepetitionSchedule())
 
 
@@ -138,7 +138,7 @@ class SectionDeliveryMode(SerializableEnum):
     SYNIF = 'SYNIF'
 
 
-class Instructor(db.EmbeddedDocument):
+class Instructor(EmbeddedDocument):
     """A class representing a course instructor.
 
     Instance Attributes:
@@ -146,11 +146,11 @@ class Instructor(db.EmbeddedDocument):
         last_name: The last name of this instructor.
     """
 
-    first_name: str = db.StringField(required=True)
-    last_name: str = db.StringField(required=True)
+    first_name: str = fields.StringField(required=True)
+    last_name: str = fields.StringField(required=True)
 
 
-class EnrolmentInfo(db.EmbeddedDocument):
+class EnrolmentInfo(EmbeddedDocument):
     """A class representing enrolment information for a section.
 
     Instance Attributes:
@@ -165,15 +165,15 @@ class EnrolmentInfo(db.EmbeddedDocument):
             for this section, or None if there is no enrollment indicator.
     """
 
-    current_enrolment: Optional[int] = db.IntField(null=True)
-    max_enrolment: Optional[int] = db.IntField(null=True)
-    has_waitlist: Optional[bool] = db.BooleanField(default=False)
-    current_waitlist: Optional[int] = db.IntField(null=True)
-    enrolment_indicator: Optional[str] = db.StringField(null=True)
+    current_enrolment: Optional[int] = fields.IntField(null=True)
+    max_enrolment: Optional[int] = fields.IntField(null=True)
+    has_waitlist: Optional[bool] = fields.BooleanField(default=False)
+    current_waitlist: Optional[int] = fields.IntField(null=True)
+    enrolment_indicator: Optional[str] = fields.StringField(null=True)
     # TODO: Add enrolment controls
 
 
-class Section(db.EmbeddedDocument):
+class Section(EmbeddedDocument):
     """A class representing a course section/meeting.
 
     Instance Attributes:
@@ -198,16 +198,16 @@ class Section(db.EmbeddedDocument):
         notes: A list of HTML strings.
     """
 
-    teaching_method: SectionTeachingMethod = db.EnumField(SectionTeachingMethod)
-    section_number: str = db.StringField()
-    meetings: list[SectionMeeting] = db.EmbeddedDocumentListField('SectionMeeting')
-    instructors: list[Instructor] = db.EmbeddedDocumentListField('Instructor')
-    subtitle: Optional[str] = db.StringField(null=True)
-    cancelled: bool = db.BooleanField()
-    delivery_modes: list[SectionDeliveryMode] = db.ListField(db.EnumField(SectionDeliveryMode))
-    enrolment_info: EnrolmentInfo = db.EmbeddedDocumentField(EnrolmentInfo)
-    notes: Optional[list[str]] = db.ListField(db.StringField())
-    linked_sections: Optional[list[str]] = db.ListField(db.StringField())
+    teaching_method: SectionTeachingMethod = fields.EnumField(SectionTeachingMethod)
+    section_number: str = fields.StringField()
+    meetings: list[SectionMeeting] = fields.EmbeddedDocumentListField('SectionMeeting')
+    instructors: list[Instructor] = fields.EmbeddedDocumentListField('Instructor')
+    subtitle: Optional[str] = fields.StringField(null=True)
+    cancelled: bool = fields.BooleanField()
+    delivery_modes: list[SectionDeliveryMode] = fields.ListField(fields.EnumField(SectionDeliveryMode))
+    enrolment_info: EnrolmentInfo = fields.EmbeddedDocumentField(EnrolmentInfo)
+    notes: Optional[list[str]] = fields.ListField(fields.StringField())
+    linked_sections: Optional[list[str]] = fields.ListField(fields.StringField())
     # TODO: Section dependencies. This should be represented as a graph, where
     # each node is a section and each edge is a dependency (which may or may not
     # be bidirectional).
@@ -236,7 +236,7 @@ class CourseTerm(SerializableEnum):
     FULL_YEAR = 'Y'
 
 
-class Organisation(db.Document):
+class Organisation(Document):
     """A class representing a department (which offers courses).
 
     Instance Attributes:
@@ -245,9 +245,9 @@ class Organisation(db.Document):
         campus: The campus this organisation is located at.
     """
 
-    code: str = db.StringField(primary_key=True)
-    name: str = db.StringField(required=True)
-    campus: Campus = db.EnumField(Campus, required=True)
+    code: str = fields.StringField(primary_key=True)
+    name: str = fields.StringField(required=True)
+    campus: Campus = fields.EnumField(Campus, required=True)
 
 
 @dataclass(frozen=True, eq=True)
@@ -334,7 +334,7 @@ class Session:
                            int(session_code[-1]) == 5)
 
 
-class Course(db.Document):
+class Course(Document):
     """A class representing a course.
 
     Instance Attributes:
@@ -357,23 +357,23 @@ class Course(db.Document):
         delivery_instructions: Additional delivery instruction information.
     """
 
-    id: str = db.StringField(primary_key=True)
-    organisation: Organisation = db.ReferenceField('Organisation')
-    code: str = db.StringField()
-    title: str = db.StringField()
-    description: str = db.StringField()
-    term: CourseTerm = db.EnumField(CourseTerm)
-    session_code: str = db.StringField(min_length=5, max_length=5)
-    sections: list[Section] = db.EmbeddedDocumentListField('Section')
-    prerequisites: str = db.StringField()  # TODO: Parse this
-    corequisites: str = db.StringField()  # TODO: Parse this
-    exclusions: str = db.StringField()  # TODO: Parse this
-    recommended_preparation: str = db.StringField()
-    breadth_categories: str = db.StringField()  # TODO: Parse this
-    distribution_categories: str = db.StringField()  # TODO: Parse this
-    web_timetable_instructions: str = db.StringField()
-    delivery_instructions: str = db.StringField()
-    campus: Campus = db.EnumField(Campus, required=True)
+    id: str = fields.StringField(primary_key=True)
+    organisation: Organisation = fields.ReferenceField('Organisation')
+    code: str = fields.StringField()
+    title: str = fields.StringField()
+    description: str = fields.StringField()
+    term: CourseTerm = fields.EnumField(CourseTerm)
+    session_code: str = fields.StringField(min_length=5, max_length=5)
+    sections: list[Section] = fields.EmbeddedDocumentListField('Section')
+    prerequisites: str = fields.StringField()  # TODO: Parse this
+    corequisites: str = fields.StringField()  # TODO: Parse this
+    exclusions: str = fields.StringField()  # TODO: Parse this
+    recommended_preparation: str = fields.StringField()
+    breadth_categories: str = fields.StringField()  # TODO: Parse this
+    distribution_categories: str = fields.StringField()  # TODO: Parse this
+    web_timetable_instructions: str = fields.StringField()
+    delivery_instructions: str = fields.StringField()
+    campus: Campus = fields.EnumField(Campus, required=True)
 
     meta = {
         'indexes': [

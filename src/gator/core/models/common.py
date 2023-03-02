@@ -1,15 +1,27 @@
 """Shared models used by the API."""
 import datetime
+from enum import Enum
 from typing import Any
+from datetime import datetime
 
-import mongoengine as db
+from mongoengine import Document, EmbeddedDocument, fields
+
+from gator.core.models.mongoengine import QuerySetManager
+
+
+class SerializableEnum(Enum):
+    """An enum that can be serialized to a JSON object."""
+
+    def __str__(self):
+        """Return the name of the enum."""
+        return self.name
 
 
 class Time(db.EmbeddedDocument):
     """A class representing an HH:MM time in 24-hour format."""
 
-    hour: int = db.IntField(min_value=0, max_value=23, required=True)
-    minute: int = db.IntField(min_value=0, max_value=59, required=True)
+    hour: int = fields.IntField(min_value=0, max_value=23, required=True)
+    minute: int = fields.IntField(min_value=0, max_value=59, required=True)
 
 
 class Record(db.Document):
@@ -27,12 +39,13 @@ class Record(db.Document):
             will be used.
     """
 
-    id: str = db.StringField(primary_key=True)
-    doc: Any = db.GenericReferenceField(required=True)
-    created_at: Time = db.DateTimeField(required=True, default=datetime.datetime.now)
-    updated_at: Time = db.DateTimeField(required=True, default=datetime.datetime.now)
-    hash: str = db.StringField(required=True, unique=True)
-    name: str = db.StringField(required=False)
+    id: str = fields.StringField(primary_key=True)
+    doc: Any = fields.GenericReferenceField(required=True)
+    created_at: datetime = fields.DateTimeField(required=True, default=datetime.now)
+    updated_at: datetime = fields.DateTimeField(required=True, default=datetime.now)
+    hash: str = fields.StringField(required=True, unique=True)
+    name: str = fields.StringField(required=False)
+    objects: QuerySetManager['Record'] = QuerySetManager['Record']()
 
     def sync(self, force: bool = False) -> str:
         """Sync the record with the database.
