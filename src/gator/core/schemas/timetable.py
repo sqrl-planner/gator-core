@@ -72,13 +72,8 @@ class SectionSchema(ModelSchema):
         """Meta class for SectionSchema."""
 
         model = timetable.Section
-        # Exclude the 'teaching_method' and 'delivery_modes' fields because they
-        # are enum fields that are not supported by marshmallow-mongoengine
-        model_skip_values = (timetable.TeachingMethod, timetable.SectionDeliveryMode)
 
-    # Manually add the 'teaching_method' and 'delivery_modes' fields
-    teaching_method = fields.Enum(timetable.TeachingMethod)
-    delivery_modes = fields.List(fields.Enum(timetable.SectionDeliveryMode))
+    meetings = fields.Nested(SectionMeetingSchema, many=True)
 
 
 class CategoricalRequirementSchema(ModelSchema):
@@ -97,3 +92,5 @@ class CourseSchema(ModelSchema):
         """Meta class for CourseSchema."""
 
         model = timetable.Course
+
+    sections = fields.Nested(SectionSchema, many=True)

@@ -271,8 +271,8 @@ class EnrolmentInfo(EmbeddedDocument):
         max_enrolment: The maximum number of students that can be enrolled in
             this section.
         has_waitlist: Whether this section has a waitlist.
-        current_waitlist: The number of students currently on the waitlist for
-            this section.
+        current_waitlist_size: The number of students currently on the waitlist
+            for this section.
         enrolment_indicator: A string representing the enrollment indicator
             for this section, or None if there is no enrollment indicator.
     """
@@ -280,7 +280,7 @@ class EnrolmentInfo(EmbeddedDocument):
     current_enrolment: Optional[int] = fields.IntField(null=True, min_value=0, default=None)  # type: ignore
     max_enrolment: Optional[int] = fields.IntField(null=True, min_value=0, default=None)  # type: ignore
     has_waitlist: bool = fields.BooleanField(default=False)  # type: ignore
-    current_waitlist: Optional[int] = fields.IntField(null=True, min_value=0, default=None)  # type: ignore
+    current_waitlist_size: Optional[int] = fields.IntField(null=True, min_value=0, default=None)  # type: ignore
     enrolment_indicator: Optional[str] = fields.StringField(null=True, default=None)  # type: ignore
     # TODO: Add enrolment controls
 
@@ -310,7 +310,7 @@ class Section(EmbeddedDocument):
     section_number: str = fields.StringField(required=True)  # type: ignore
     meetings: list[SectionMeeting] = fields.EmbeddedDocumentListField('SectionMeeting', required=True)  # type: ignore
     instructors: list[Instructor] = fields.EmbeddedDocumentListField('Instructor', required=True)  # type: ignore
-    delivery_modes: SectionDeliveryMode = fields.ListField(
+    delivery_modes: list[SectionDeliveryMode] = fields.ListField(
         fields.EnumField(SectionDeliveryMode), required=True)  # type: ignore
     subtitle: Optional[str] = fields.StringField(null=True, default=None)  # type: ignore
     cancelled: bool = fields.BooleanField(default=False)  # type: ignore
@@ -377,7 +377,7 @@ class CategoricalRequirement(EmbeddedDocument):
     type: str = fields.StringField(required=True, choices=['breadth', 'distribution'])  # type: ignore
     name: str = fields.StringField()  # type: ignore
     description: str = fields.StringField()  # type: ignore
-    institution: list[Institution] = fields.ListField(
+    institutions: list[Institution] = fields.ListField(
         fields.ReferenceField(Institution), required=True)  # type: ignore
 
 
