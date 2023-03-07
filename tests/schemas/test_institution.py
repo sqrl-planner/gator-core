@@ -184,4 +184,3 @@ class TestLocationSchema:
         """Test dumping a location."""
         for location, datum in zip(self.LOCATIONS, self.DUMPED_LOCATIONS):
             assert OrderedDict(self.schema.dump(location)) == datum
-
