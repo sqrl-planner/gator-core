@@ -378,9 +378,8 @@ class Course(Document):
         sessions: A list of sessions in which this course is offered.
         term: The term this course is offered in.
         credits: The number of credits this course is worth.
-        campus: The campus this course is offered at.
-        faculty: The faculty that offers this course.
-        department: The department that offers this course.
+        institution: The institution that offers this course. This is a sub-tree
+            of the institution hierarchy.
         title: The title of this course. This is usually the same as the name.
         instruction_level: The level of instruction for this course.
             For example, undergraduate or graduate.
@@ -403,9 +402,7 @@ class Course(Document):
     sessions: list[Session] = fields.EmbeddedDocumentListField('Session')  # type: ignore
     term: Term = fields.EnumField(Term)  # type: ignore
     credits: float = fields.FloatField()  # type: ignore
-    campus: Institution = fields.ReferenceField(Institution)  # type: ignore
-    faculty: Institution = fields.ReferenceField(Institution)  # type: ignore
-    department: Institution = fields.ReferenceField(Institution)  # type: ignore
+    institution: Institution = fields.ReferenceField(Institution)  # type: ignore
     # Metadata fields
     title: Optional[str] = fields.StringField(null=True, default=None)  # type: ignore
     instruction_level: Optional[InstructionLevel] = fields.EnumField(
