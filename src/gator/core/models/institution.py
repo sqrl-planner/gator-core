@@ -1,4 +1,5 @@
 """Model definitions for data about an academic institution."""
+from queue import Queue
 from typing import Optional
 
 import mongoengine
@@ -32,9 +33,77 @@ class Institution(Document):
     name: str = fields.StringField(required=True)  # type: ignore
     type: str = fields.StringField(required=True)  # type: ignore
     # Institution hierarchy
-    parent: 'Institution' = fields.ReferenceField('self', default=None, reverse_delete_rule=mongoengine.NULLIFY)  # type: ignore
+    parent: Optional['Institution'] = fields.ReferenceField('self', default=None, reverse_delete_rule=mongoengine.NULLIFY)  # type: ignore
     sub_institutions: list['Institution'] = fields.ListField(
         fields.ReferenceField('self'), default=list, reverse_delete_rule=mongoengine.NULLIFY)  # type: ignore
+
+    def find_children(self, institution_type: str) -> list['Institution']:
+        """Find all sub-institutions of the given type.
+
+        This function recursively searches through all sub-institutions of this
+        institution, performing a queue-based breadth-first search, and returns
+        a list of all institutions of the given type.
+
+        Args:
+            institution_type: The type of institution to search for. For
+                example, `university` or `campus`.
+
+        Returns:
+            A list of institutions of the given type.
+        """
+        q = Queue()
+        q.put(self)
+
+        visited = set()
+        children = []
+
+        while not q.empty():
+            curr = q.get()
+            if curr.code in visited:
+                continue
+            visited.add(curr.code)
+
+            if curr.type == institution_type:
+                children.append(curr)
+
+            for sub_inst in curr.sub_institutions:
+                q.put(sub_inst)
+
+        return children
+
+    def find_parent(self, institution_type: str) -> Optional['Institution']:
+        """Find the first parent institution of the given type.
+
+        This function recursively searches through all parent institutions of
+        this institution, performing a queue-based breadth-first search, and
+        returns the first institution of the given type.
+
+        Args:
+            institution_type: The type of institution to search for. For
+                example, `university` or `campus`.
+
+        Returns:
+            The first (closest) parent institution of the given type, or None
+            if no such institution exists.
+        """
+        q = Queue()
+        q.put(self)
+
+        visited = set()
+
+        while not q.empty():
+            curr = q.get()
+            if curr.code in visited:
+                continue
+            visited.add(curr.code)
+
+            if curr.type == institution_type:
+                return curr
+
+            if curr.parent is not None:
+                q.put(curr.parent)
+
+        return None
 
 
 class Building(Document):

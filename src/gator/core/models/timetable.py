@@ -10,13 +10,6 @@ from gator.core.models.common import SerializableEnum
 from gator.core.models.institution import Institution, Location
 
 
-class Time(EmbeddedDocument):
-    """A class representing an HH:MM time in 24-hour format."""
-
-    hour: int = fields.IntField(min_value=0, max_value=23, required=True)  # type: ignore
-    minute: int = fields.IntField(min_value=0, max_value=59, required=True)  # type: ignore
-
-
 class Session(EmbeddedDocument):
     """A formal division of the academic year.
 
@@ -170,22 +163,43 @@ class WeeklyRepetitionSchedule(EmbeddedDocument):
 
         A schedule is alternating (i.e. does not occur every week) if there is
         at least one week :math:`i` such that the :math:`i`-th bit is 0.
+
+        Examples:
+            >>> WeeklyRepetitionSchedule(schedule=0b1010).is_alternating
+            True
+            >>> WeeklyRepetitionSchedule(schedule=0b1111).is_alternating
+            False
         """
         k = math.ceil(math.log2(self.schedule))
         return self.schedule > 1 and self.schedule != (1 << k) - 1
 
-    def to_dict(self) -> dict:
-        """Convert this object to a dictionary.
+    @property
+    def schedule_bits(self) -> str:
+        """The binary representation of the schedule.
 
-        Returns:
-            A dictionary representation of this object, with two additional
-            keys: `schedule_bits` and `is_alternating`.
+        Examples:
+            >>> WeeklyRepetitionSchedule(schedule=0b1).schedule_bits
+            '1'
+            >>> WeeklyRepetitionSchedule(schedule=0b1010).schedule_bits
+            '1010'
         """
-        return {
-            'schedule': self.schedule,
-            'schedule_bits': bin(self.schedule)[2:],  # Remove the '0b' prefix
-            'is_alternating': self.is_alternating
-        }
+        return bin(self.schedule)[2:]  # Remove the '0b' prefix
+
+    @property
+    def weeks(self) -> list[int]:
+        """A list of the weeks in which this meeting occurs.
+
+        Each week is represented as an integer between 1 and the number of
+        weeks in a repeating period, inclusive. The weeks are sorted in
+        ascending order.
+
+        Examples:
+            >>> WeeklyRepetitionSchedule(schedule=0b1).weeks
+            [1]
+            >>> WeeklyRepetitionSchedule(schedule=0b1010).weeks
+            [2, 4]
+        """
+        return [i + 1 for i, bit in enumerate(reversed(self.schedule_bits)) if bit == '1']
 
 
 class SectionMeeting(EmbeddedDocument):
