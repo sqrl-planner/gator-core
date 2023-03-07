@@ -28,6 +28,7 @@ class Session(EmbeddedDocument):
         year: The year of the session. Must be between 0 and 9999.
         season: The season of the session.
     """
+
     # Private Class Attributes:
     #     _SEASON_MAP: A mapping from season names to their corresponding
     #         session codes.
@@ -305,6 +306,7 @@ class Term(SerializableEnum):
         SECOND_SEMESTER: The second semester of the academic year.
         FULL_YEAR: The full academic year. Spans both semesters.
     """
+
     FIRST_SEMESTER = 'F'
     SECOND_SEMESTER = 'S'
     FULL_YEAR = 'Y'
@@ -312,6 +314,7 @@ class Term(SerializableEnum):
 
 class InstructionLevel(SerializableEnum):
     """The level of instruction for a course."""
+
     UNDERGRADUATE = 'undergraduate'
 
 
