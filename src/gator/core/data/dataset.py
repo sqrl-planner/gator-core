@@ -38,39 +38,51 @@ class Dataset(ABC):
 
 
 class SessionalDataset(Dataset):
-    """A dataset that is specific to a session.
+    """A dataset that is specific to one or more sessions.
 
-    For example, a dataset of courses offered in a particular session, or a
-    dataset of clubs that are active in a particular session.
+    For example, a dataset of courses offered in a set of particular sessions,
+    or a dataset of clubs that are active in a single session.
 
-    All subclasses must implement the `_get_latest_session` method to return
-    the most up-to-date session for this dataset.
+    All subclasses must implement the `_get_latest_sessions` method to return
+    the most up-to-date sessions for this dataset.
 
     Instance Attributes:
-        session: The session that this dataset is specific to.
+        sessions: The sessions that this dataset is specific to.
     """
 
-    session: Session
+    sessions: list[Session]
 
-    def __init__(self, session: Optional[Union[Session, str]] = None) -> None:
+    def __init__(self,
+                 sessions: Optional[list[Union[int, str, Session]]] = None,
+                 session: Optional[Union[int, str, Session]] = None) -> None:
         """Initialize a SessionalDataset.
 
         Args:
-            session: An optional session that can be supplied instead of the
-                default. This can be an instance of Session or a string providing
-                the session code. If None, the latest session will be used.
+            sessions: The sessions that this dataset tracks. Each element can
+                either be a session code, which will be parsed into a Session
+                object, or a Session object itself. If no sessions are provided,
+                the most up-to-date sessions will be used.
+            session: Instead of providing a list of sessions, a single session
+                can be provided. This is equivalent to providing a list with a
+                single session. If both `sessions` and `session` are provided,
+                `sessions` will take precedence.
         """
         super().__init__()
-        if isinstance(session, str):
-            self.session = Session.parse(session)
-        elif session is None:
-            self.session = self._get_latest_session()
+        # Prefer the `sessions` argument. In the case it is None, use the
+        # `session` argument if it is provided, otherwise default to None.
+        sessions = sessions or [session] if session is not None else None
+        if sessions is None:
+            # Use the most up-to-date sessions
+            self.sessions = self._get_latest_sessions()
         else:
-            self.session = session
+            # Parse the sessions
+            self.sessions = [
+                Session.parse(session) if not isinstance(session, Session) else session
+                for session in sessions]
 
     @abstractclassmethod
-    def _get_latest_session(cls) -> Session:
-        """Return the most up-to-date session for this dataset.
+    def _get_latest_sessions(cls) -> list[Session]:
+        """Return the most up-to-date sessions for this dataset.
 
         Raise a ValueError if the session could not be found.
         """

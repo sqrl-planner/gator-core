@@ -6,7 +6,7 @@ def nullable_convert(value: Any, func: Callable[[Any], Any]) -> Any:
     """Convert a value given a conversion function if it is not None.
 
     Remarks:
-        - This will silently handling None inputs by returning None.
+        - This will silently handle None inputs by returning None.
         - Useful for when a function depends on a non-None input.
 
     Args:
