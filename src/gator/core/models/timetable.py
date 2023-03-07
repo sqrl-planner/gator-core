@@ -1,14 +1,13 @@
 """Model definitions for timetable data."""
-import re
 import math
+import re
 from functools import lru_cache
-from dataclasses import dataclass
 from typing import Optional, Union
 
 from mongoengine import Document, EmbeddedDocument, fields
 
 from gator.core.models.common import SerializableEnum
-from gator.core.models.institution import Institution, Building, Location
+from gator.core.models.institution import Institution, Location
 
 
 class Session(EmbeddedDocument):
@@ -37,8 +36,8 @@ class Session(EmbeddedDocument):
     _SEASON_MAP: dict[str, int] = {'fall': 9, 'winter': 1, 'summer': 5}
     _INVERSE_SEASON_MAP: dict[int, str] = {v: k for k, v in _SEASON_MAP.items()}
 
-    year = fields.IntField(required=True, min_value=0, max_value=9999)
-    season = fields.StringField(required=True, choices=_SEASON_MAP.keys())
+    year: int = fields.IntField(required=True, min_value=0, max_value=9999)  # type: ignore
+    season: str = fields.StringField(required=True, choices=_SEASON_MAP.keys())  # type: ignore
 
     @property
     def code(self) -> str:
@@ -93,6 +92,7 @@ class Session(EmbeddedDocument):
                 string and zero-padded to the left if necessary. E.g. if
                 509 is passed, it will be converted to '00509' which corresponds
                 to the fall session of the year 50.
+
         Examples:
             >>> Session.parse(509) == Session(year=50, season='fall')
             True
@@ -136,7 +136,7 @@ class WeeklyRepetitionSchedule(EmbeddedDocument):
         schedule: The integer representing the repetition schedule.
     """
 
-    schedule = fields.IntField(min_value=1, default=1)
+    schedule: int = fields.IntField(min_value=1, default=1)  # type: ignore
 
     @property
     def is_alternating(self) -> bool:
@@ -179,14 +179,13 @@ class SectionMeeting(EmbeddedDocument):
             to a schedule that occurs every week.
     """
 
-    day = fields.IntField(required=True, min_value=0, max_value=6)
-    start_time = fields.IntField(required=True, min_value=0, max_value=86400000)
-    end_time = fields.IntField(required=True, min_value=0, max_value=86400000)
-    session = fields.EmbeddedDocumentField(Session, required=True)
-    location = fields.EmbeddedDocumentField(
-        Location, null=True, default=None)
-    repetition_schedule = fields.EmbeddedDocumentField(
-        WeeklyRepetitionSchedule, default=WeeklyRepetitionSchedule)
+    day: int = fields.IntField(required=True, min_value=0, max_value=6)  # type: ignore
+    start_time: int = fields.IntField(required=True, min_value=0, max_value=86400000)  # type: ignore
+    end_time: int = fields.IntField(required=True, min_value=0, max_value=86400000)  # type: ignore
+    session: Session = fields.EmbeddedDocumentField(Session, required=True)  # type: ignore
+    location: Location = fields.EmbeddedDocumentField(Location, null=True, default=None)  # type: ignore
+    repetition_schedule: WeeklyRepetitionSchedule = fields.EmbeddedDocumentField(
+        WeeklyRepetitionSchedule, default=WeeklyRepetitionSchedule)  # type: ignore
 
 
 class TeachingMethod(SerializableEnum):
@@ -219,8 +218,8 @@ class Instructor(EmbeddedDocument):
         last_name: The last name of this instructor.
     """
 
-    first_name = fields.StringField(required=True)
-    last_name = fields.StringField(required=True)
+    first_name: str = fields.StringField(required=True)  # type: ignore
+    last_name: str = fields.StringField(required=True)  # type: ignore
 
 
 class EnrolmentInfo(EmbeddedDocument):
@@ -238,11 +237,11 @@ class EnrolmentInfo(EmbeddedDocument):
             for this section, or None if there is no enrollment indicator.
     """
 
-    current_enrolment = fields.IntField(null=True, min_value=0, default=None)
-    max_enrolment = fields.IntField(null=True, min_value=0, default=None)
-    has_waitlist = fields.BooleanField(default=False)
-    current_waitlist = fields.IntField(null=True, min_value=0, default=None)
-    enrolment_indicator = fields.StringField(null=True, default=None)
+    current_enrolment: Optional[int] = fields.IntField(null=True, min_value=0, default=None)  # type: ignore
+    max_enrolment: Optional[int] = fields.IntField(null=True, min_value=0, default=None)  # type: ignore
+    has_waitlist: bool = fields.BooleanField(default=False)  # type: ignore
+    current_waitlist: Optional[int] = fields.IntField(null=True, min_value=0, default=None)  # type: ignore
+    enrolment_indicator: Optional[str] = fields.StringField(null=True, default=None)  # type: ignore
     # TODO: Add enrolment controls
 
 
@@ -267,19 +266,20 @@ class Section(EmbeddedDocument):
         notes: A list of HTML strings.
     """
 
-    teaching_method = fields.EnumField(TeachingMethod, required=True)
-    section_number = fields.StringField(required=True)
-    meetings = fields.EmbeddedDocumentListField('SectionMeeting', required=True)
-    instructors = fields.EmbeddedDocumentListField('Instructor', required=True)
-    delivery_modes = fields.ListField(fields.EnumField(SectionDeliveryMode), required=True)
-    subtitle = fields.StringField(null=True, default=None)
-    cancelled = fields.BooleanField(default=False)
-    enrolment_info = fields.EmbeddedDocumentField(EnrolmentInfo, default=EnrolmentInfo)
-    notes = fields.ListField(fields.StringField(), default=list)
+    teaching_method: TeachingMethod = fields.EnumField(TeachingMethod, required=True)  # type: ignore
+    section_number: str = fields.StringField(required=True)  # type: ignore
+    meetings: list[SectionMeeting] = fields.EmbeddedDocumentListField('SectionMeeting', required=True)  # type: ignore
+    instructors: list[Instructor] = fields.EmbeddedDocumentListField('Instructor', required=True)  # type: ignore
+    delivery_modes: SectionDeliveryMode = fields.ListField(
+        fields.EnumField(SectionDeliveryMode), required=True)  # type: ignore
+    subtitle: Optional[str] = fields.StringField(null=True, default=None)  # type: ignore
+    cancelled: bool = fields.BooleanField(default=False)  # type: ignore
+    enrolment_info: EnrolmentInfo = fields.EmbeddedDocumentField(EnrolmentInfo, default=EnrolmentInfo)  # type: ignore
+    notes: list[str] = fields.ListField(fields.StringField(), default=list)  # type: ignore
     # TODO: Section dependencies. This should be represented as a graph, where
     # each node is a section and each edge is a dependency (which may or may not
     # be bidirectional).
-    linked_sections = fields.ListField(fields.StringField(), default=list)
+    linked_sections: list[str] = fields.ListField(fields.StringField(), default=list)  # type: ignore
 
     @property
     def code(self) -> str:
@@ -315,23 +315,28 @@ class InstructionLevel(SerializableEnum):
     UNDERGRADUATE = 'undergraduate'
 
 
-class BreadthRequirement(EmbeddedDocument):
+class CategoricalRequirement(EmbeddedDocument):
     """A breadth or distribution requirement.
 
     Instance Attributes:
-        code: A unique code for this breadth requirement.
-        type: The type of this breadth requirement.
-        description: A description of this breadth requirement.
-        is_distribution_requirement: Whether this breadth requirement is a
-            distribution requirement.
-        institution: The institution that this breadth requirement belongs to.
+        code: A unique code for this categorical requirement.
+        type: The type of this categorical requirement. Either 'breadth' or
+            'distribution'.
+        name: The name of this categorical requirement.
+        description: A description of this categorical requirement.
+        institutions: A list of institutions where this categorical requirement
+            applies. For example, a breadth requirement might only apply to
+            students in the Faculty of Arts and Science, while a distribution
+            requirement might apply to all students. There should be at least
+            one institution in this list.
     """
 
-    code = fields.StringField(unique=True, primary_key=True)
-    type = fields.StringField()
-    description = fields.StringField()
-    is_distribution_requirement = fields.BooleanField()
-    institution: Institution = fields.ReferenceField('Institution')
+    code: str = fields.StringField(unique=True, primary_key=True)  # type: ignore
+    type: str = fields.StringField(required=True, choices=['breadth', 'distribution'])  # type: ignore
+    name: str = fields.StringField()  # type: ignore
+    description: str = fields.StringField()  # type: ignore
+    institution: list[Institution] = fields.ListField(
+        fields.ReferenceField(Institution), required=True)  # type: ignore
 
 
 class Course(Document):
@@ -351,7 +356,7 @@ class Course(Document):
         title: The title of this course. This is usually the same as the name.
         instruction_level: The level of instruction for this course.
             For example, undergraduate or graduate.
-        breadth_requirements: Breadth and distribution requirements that this
+        categorical_requirements: Breadth and distribution requirements that this
             course fulfills.
         description: The description of this course.
         prerequisites: Prerequisties for this course.
@@ -363,29 +368,30 @@ class Course(Document):
         notes: A list of HTML strings.
     """
 
-    id = fields.StringField(primary_key=True)
-    code = fields.StringField()
-    name = fields.StringField()
-    sections = fields.EmbeddedDocumentListField('Section')
-    sessions = fields.EmbeddedDocumentListField('Session')
-    term = fields.EnumField(Term)
-    credits = fields.FloatField()
-    campus = fields.ReferenceField(Institution)
-    faculty = fields.ReferenceField(Institution)
-    department = fields.ReferenceField(Institution)
+    id: str = fields.StringField(primary_key=True)  # type: ignore
+    code: str = fields.StringField()  # type: ignore
+    name: str = fields.StringField()  # type: ignore
+    sections: list[Section] = fields.EmbeddedDocumentListField('Section')  # type: ignore
+    sessions: list[Session] = fields.EmbeddedDocumentListField('Session')  # type: ignore
+    term: Term = fields.EnumField(Term)  # type: ignore
+    credits: float = fields.FloatField()  # type: ignore
+    campus: Institution = fields.ReferenceField(Institution)  # type: ignore
+    faculty: Institution = fields.ReferenceField(Institution)  # type: ignore
+    department: Institution = fields.ReferenceField(Institution)  # type: ignore
     # Metadata fields
-    title = fields.StringField(null=True, default=None)
-    instruction_level = fields.EnumField(InstructionLevel, null=True, default=None)
-    description = fields.StringField(null=True, default=None)
-    breadth_requirements = fields.ListField(
-        fields.ReferenceField(BreadthRequirement), default=list)
-    prerequisites = fields.StringField(null=True, default=None)
-    corequisites = fields.StringField(null=True, default=None)
-    exclusions = fields.StringField(null=True, default=None)
-    recommended_preparation = fields.StringField(null=True, default=None)
-    cancelled = fields.BooleanField(default=False)
-    tags = fields.ListField(fields.StringField(), default=list)
-    notes = fields.ListField(fields.StringField(), default=list)
+    title: Optional[str] = fields.StringField(null=True, default=None)  # type: ignore
+    instruction_level: Optional[InstructionLevel] = fields.EnumField(
+        InstructionLevel, null=True, default=None)  # type: ignore
+    description: Optional[str] = fields.StringField(null=True, default=None)  # type: ignore
+    categorical_requirements: list[CategoricalRequirement] = fields.ListField(
+        fields.ReferenceField(CategoricalRequirement), default=list)  # type: ignore
+    prerequisites: Optional[str] = fields.StringField(null=True, default=None)  # type: ignore
+    corequisites: Optional[str] = fields.StringField(null=True, default=None)  # type: ignore
+    exclusions: Optional[str] = fields.StringField(null=True, default=None)  # type: ignore
+    recommended_preparation: Optional[str] = fields.StringField(null=True, default=None)  # type: ignore
+    cancelled: bool = fields.BooleanField(default=False)  # type: ignore
+    tags: list[str] = fields.ListField(fields.StringField(), default=list)  # type: ignore
+    notes: list[str] = fields.ListField(fields.StringField(), default=list)  # type: ignore
 
     @property
     @lru_cache

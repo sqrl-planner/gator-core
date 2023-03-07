@@ -1,12 +1,11 @@
 """Shared models used by the API."""
-import datetime
+from datetime import datetime
 from enum import Enum
 from typing import Any
-from datetime import datetime
 
 from mongoengine import Document, EmbeddedDocument, fields
 
-from gator.core.models.mongoengine import QuerySetManager
+from gator.core.models.mongoengine_typing import QuerySetManager
 
 
 class SerializableEnum(Enum):
@@ -20,8 +19,8 @@ class SerializableEnum(Enum):
 class Time(EmbeddedDocument):
     """A class representing an HH:MM time in 24-hour format."""
 
-    hour: int = fields.IntField(min_value=0, max_value=23, required=True)
-    minute: int = fields.IntField(min_value=0, max_value=59, required=True)
+    hour: int = fields.IntField(min_value=0, max_value=23, required=True)  # type: ignore
+    minute: int = fields.IntField(min_value=0, max_value=59, required=True)  # type: ignore
 
 
 class Record(Document):
@@ -39,12 +38,12 @@ class Record(Document):
             will be used.
     """
 
-    id: str = fields.StringField(primary_key=True)
-    doc: Any = fields.GenericReferenceField(required=True)
-    created_at: datetime = fields.DateTimeField(required=True, default=datetime.now)
-    updated_at: datetime = fields.DateTimeField(required=True, default=datetime.now)
-    hash: str = fields.StringField(required=True, unique=True)
-    name: str = fields.StringField(required=False)
+    id: str = fields.StringField(primary_key=True)  # type: ignore
+    doc: Any = fields.GenericReferenceField(required=True)  # type: ignore
+    created_at: datetime = fields.DateTimeField(required=True, default=datetime.now)  # type: ignore
+    updated_at: datetime = fields.DateTimeField(required=True, default=datetime.now)  # type: ignore
+    hash: str = fields.StringField(required=True, unique=True)  # type: ignore
+    name: str = fields.StringField(required=False)  # type: ignore
     objects: QuerySetManager['Record'] = QuerySetManager['Record']()
 
     def sync(self, force: bool = False) -> str:
@@ -67,7 +66,7 @@ class Record(Document):
         elif force or record.hash != self.hash:
             # Update the record
             record.doc = self.doc
-            record.updated_at = datetime.datetime.now()
+            record.updated_at = datetime.now()
             record.hash = self.hash
             record.save(cascade=True)
             return 'updated'

@@ -1,7 +1,8 @@
 """Monkey patching for mongoengine."""
 import types
 from typing import Generic, Type, TypeVar
-from mongoengine import QuerySet, Document
+
+from mongoengine import Document, QuerySet
 
 U = TypeVar('U', bound=Document)
 # Register a no-op __class_getitem__ method on QuerySet to make it compatible with generic types

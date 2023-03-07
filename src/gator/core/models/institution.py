@@ -27,13 +27,13 @@ class Institution(Document):
             Toronto.
     """
 
-    code = fields.StringField(unique=True, primary_key=True)
-    name = fields.StringField(required=True)
-    type = fields.StringField(required=True)
+    code: str = fields.StringField(unique=True, primary_key=True)  # type: ignore
+    name: str = fields.StringField(required=True)  # type: ignore
+    type: str = fields.StringField(required=True)  # type: ignore
     # Institution hierarchy
-    parent = fields.ReferenceField('self', default=None)
-    sub_institutions = fields.ListField(
-        fields.ReferenceField('self'), default=list)
+    parent: 'Institution' = fields.ReferenceField('self', default=None, reverse_delete_rule=fields.NULLIFY)  # type: ignore
+    sub_institutions: list['Institution'] = fields.ListField(
+        fields.ReferenceField('self'), default=list, reverse_delete_rule=fields.NULLIFY)  # type: ignore
 
 
 class Building(Document):
@@ -46,10 +46,10 @@ class Building(Document):
         map_url: The URL of this building's map. Can be None if unknown.
     """
 
-    code = fields.StringField(unique=True, primary_key=True)
-    institution = fields.ReferenceField(Institution, required=True)
-    name = fields.StringField(null=True, default=None)
-    map_url = fields.URLField(null=True, default=None)
+    code: str = fields.StringField(unique=True, primary_key=True)  # type: ignore
+    institution: Institution = fields.ReferenceField(Institution, required=True)  # type: ignore
+    name: Optional[str] = fields.StringField(null=True, default=None)  # type: ignore
+    map_url: Optional[str] = fields.URLField(null=True, default=None)  # type: ignore
 
 
 class Location(EmbeddedDocument):
@@ -61,5 +61,5 @@ class Location(EmbeddedDocument):
             code.
     """
 
-    building = fields.ReferenceField(Building, required=True)
-    room = fields.StringField(required=True)
+    building: Building = fields.ReferenceField(Building, required=True)  # type: ignore
+    room: str = fields.StringField(required=True)  # type: ignore
