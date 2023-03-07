@@ -1,6 +1,7 @@
 """Model definitions for data about an academic institution."""
 from typing import Optional
 
+import mongoengine
 from mongoengine import Document, EmbeddedDocument, fields
 
 
@@ -31,9 +32,9 @@ class Institution(Document):
     name: str = fields.StringField(required=True)  # type: ignore
     type: str = fields.StringField(required=True)  # type: ignore
     # Institution hierarchy
-    parent: 'Institution' = fields.ReferenceField('self', default=None, reverse_delete_rule=fields.NULLIFY)  # type: ignore
+    parent: 'Institution' = fields.ReferenceField('self', default=None, reverse_delete_rule=mongoengine.NULLIFY)  # type: ignore
     sub_institutions: list['Institution'] = fields.ListField(
-        fields.ReferenceField('self'), default=list, reverse_delete_rule=fields.NULLIFY)  # type: ignore
+        fields.ReferenceField('self'), default=list, reverse_delete_rule=mongoengine.NULLIFY)  # type: ignore
 
 
 class Building(Document):

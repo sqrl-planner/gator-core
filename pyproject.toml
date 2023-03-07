@@ -21,10 +21,10 @@ exclude = [
 python = "^3.9"
 mongoengine = ">=0.20"
 marshmallow = "^3.17.0"
-marshmallow-enum = "^1.5.1"
 requests = "^2.28.2"
 bs4 = "^0.0.1"
 routes = "^2.5.1"
+marshmallow-mongoengine = {git = "https://github.com/sqrl-planner/marshmallow-mongoengine.git", rev = "feat/enum-support"}
 
 [tool.poetry.dev-dependencies]
 pre-commit = "^2.20.0"

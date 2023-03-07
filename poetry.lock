@@ -427,19 +427,24 @@ lint = ["flake8 (==5.0.4)", "flake8-bugbear (==22.10.25)", "mypy (==0.990)", "pr
 tests = ["pytest", "pytz", "simplejson"]
 
 [[package]]
-name = "marshmallow-enum"
-version = "1.5.1"
-description = "Enum field for Marshmallow"
+name = "marshmallow-mongoengine"
+version = "0.31.1"
+description = ""
 category = "main"
 optional = false
 python-versions = "*"
-files = [
-    {file = "marshmallow-enum-1.5.1.tar.gz", hash = "sha256:38e697e11f45a8e64b4a1e664000897c659b60aa57bfa18d44e226a9920b6e58"},
-    {file = "marshmallow_enum-1.5.1-py2.py3-none-any.whl", hash = "sha256:57161ab3dbfde4f57adeb12090f39592e992b9c86d206d02f6bd03ebec60f072"},
-]
+files = []
+develop = false
 
 [package.dependencies]
-marshmallow = ">=2.0.0"
+marshmallow = ">=3.10.0"
+mongoengine = ">=0.9.0"
+
+[package.source]
+type = "git"
+url = "https://github.com/sqrl-planner/marshmallow-mongoengine.git"
+reference = "feat/enum-support"
+resolved_reference = "365af9abef0651095a3ac2763ba5e6b5ffdd8ac8"
 
 [[package]]
 name = "mongo-types"
@@ -1008,4 +1013,4 @@ watchdog = ["watchdog"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "5fba664f164b6d51d3b930eb34a5c5139551a9092432df0295bad65871b527b9"
+content-hash = "d6b986ee0bada6030d117db78961273ca7eb9fd4962abada49a5443d8bdf05d2"

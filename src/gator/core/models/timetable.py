@@ -2,12 +2,19 @@
 import math
 import re
 from functools import lru_cache
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 from mongoengine import Document, EmbeddedDocument, fields
 
 from gator.core.models.common import SerializableEnum
 from gator.core.models.institution import Institution, Location
+
+
+class Time(EmbeddedDocument):
+    """A class representing an HH:MM time in 24-hour format."""
+
+    hour: int = fields.IntField(min_value=0, max_value=23, required=True)  # type: ignore
+    minute: int = fields.IntField(min_value=0, max_value=59, required=True)  # type: ignore
 
 
 class Session(EmbeddedDocument):
@@ -38,7 +45,25 @@ class Session(EmbeddedDocument):
     _INVERSE_SEASON_MAP: dict[int, str] = {v: k for k, v in _SEASON_MAP.items()}
 
     year: int = fields.IntField(required=True, min_value=0, max_value=9999)  # type: ignore
-    season: str = fields.StringField(required=True, choices=_SEASON_MAP.keys())  # type: ignore
+    season: str = fields.StringField(required=True, choices=list(_SEASON_MAP.keys()))  # type: ignore
+
+    def __init__(self, year: int, season: str, *args: Any, **kwargs: Any) -> None:
+        """Initialize a session with the given year and season.
+
+        Args:
+            year: The year of the session. Must be between 0 and 9999.
+            season: The season of the session.
+
+        Note:
+            The year and season are passed as positional arguments for
+            convenience, but they are actually stored as keyword arguments
+            in the `kwargs` dictionary. If `year` and `season` are passed
+            as keyword arguments, they will be ignored, meaning that the
+            positional arguments always take precedence.
+        """
+        kwargs['year'] = year
+        kwargs['season'] = season
+        super().__init__(*args, **kwargs)
 
     @property
     def code(self) -> str:
@@ -50,11 +75,11 @@ class Session(EmbeddedDocument):
             9 for fall, 1 for winter, and 5 for summer.
 
         Examples:
-            >>> Session(2020, season='fall').code
+            >>> Session(2020, 'fall').code
             '20209'
-            >>> Session(2019, season='winter').code
+            >>> Session(2019, 'winter').code
             '20191'
-            >>> Session(1966, season='summer').code
+            >>> Session(1966, 'summer').code
             '19665'
         """
         return f'{str(self.year).zfill(4)}{self._SEASON_MAP[self.season]}'
@@ -64,11 +89,11 @@ class Session(EmbeddedDocument):
         """A human-readable representation of this session.
 
         Examples:
-            >>> Session(2020, season='fall').human_str
+            >>> Session(2020, 'fall').human_str
             'Fall 2020'
-            >>> Session(2019, season='winter').human_str
+            >>> Session(2019, 'winter').human_str
             'Winter 2019'
-            >>> Session(1966, season='summer').human_str
+            >>> Session(1966, 'summer').human_str
             'Summer 1966'
         """
         return f'{self.season.capitalize()} {self.year}'
@@ -386,8 +411,8 @@ class Course(Document):
     instruction_level: Optional[InstructionLevel] = fields.EnumField(
         InstructionLevel, null=True, default=None)  # type: ignore
     description: Optional[str] = fields.StringField(null=True, default=None)  # type: ignore
-    categorical_requirements: list[CategoricalRequirement] = fields.ListField(
-        fields.ReferenceField(CategoricalRequirement), default=list)  # type: ignore
+    categorical_requirements: list[CategoricalRequirement] = fields.EmbeddedDocumentListField(
+        CategoricalRequirement, default=list)  # type: ignore
     prerequisites: Optional[str] = fields.StringField(null=True, default=None)  # type: ignore
     corequisites: Optional[str] = fields.StringField(null=True, default=None)  # type: ignore
     exclusions: Optional[str] = fields.StringField(null=True, default=None)  # type: ignore

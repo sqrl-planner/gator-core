@@ -3,7 +3,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
-from mongoengine import Document, EmbeddedDocument, fields
+from mongoengine import Document, fields
 
 from gator.core.models.mongoengine_typing import QuerySetManager
 
@@ -14,13 +14,6 @@ class SerializableEnum(Enum):
     def __str__(self):
         """Return the name of the enum."""
         return self.name
-
-
-class Time(EmbeddedDocument):
-    """A class representing an HH:MM time in 24-hour format."""
-
-    hour: int = fields.IntField(min_value=0, max_value=23, required=True)  # type: ignore
-    minute: int = fields.IntField(min_value=0, max_value=59, required=True)  # type: ignore
 
 
 class Record(Document):
