@@ -1,19 +1,23 @@
 # type: ignore
-"""Base classes for a datasets."""
+"""Base classes for datasets."""
 import fnmatch
 from abc import ABC, abstractclassmethod, abstractmethod, abstractproperty
 from typing import Any, Iterator, Optional, Type, Union
 
-from gator.core.models.common import Record
+from mongoengine import Document
+
 from gator.core.models.timetable import Session
 
 
 class Dataset(ABC):
-    """A dataset that returns :class:`gator.models.Record` instances.
+    """A dataset that converts free-form data into mongoengine documents.
 
-    All subclasses should implement the `get` method to return a list of
-    records. The `slug`, `name`, and `description` properties should also be
-    implemented to provide metadata about the dataset.
+    All subclasses should implement functionality for a) pulling data from a
+    source (e.g. a database, a file, or an API) and returning it as a list of
+    `(id, data)` records via the `get` method, and b) processing each record
+    into a :class:`mongoengine.Document` object via the `process` method.
+    The `slug`, `name`, and `description` properties should also be implemented
+    to provide metadata about the dataset.
     """
 
     @abstractproperty
@@ -32,8 +36,23 @@ class Dataset(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def get(self) -> Iterator[Record]:
-        """Return an iterator that lazily yields records from this dataset."""
+    def get(self) -> Iterator[tuple[str, Any]]:
+        """Return an iterator that lazily yields `(id, data)` records.
+
+        The `id` should be a unique identifier for the record, and the `data`
+        can be any hashable object. A hash of the `data` object will be compared
+        with a hash stored in the database for the record with the given `id`.
+        """
+        raise NotImplementedError()
+
+    @abstractmethod
+    def process(self, id: str, data: Any) -> Document:
+        """Process the given record into a :class:`mongoengine.Document`.
+
+        Args:
+            id: The unique identifier for the record.
+            data: The data for the record.
+        """
         raise NotImplementedError()
 
 
