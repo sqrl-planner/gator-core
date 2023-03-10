@@ -24,7 +24,6 @@ marshmallow = "^3.17.0"
 requests = "^2.28.2"
 bs4 = "^0.0.1"
 routes = "^2.5.1"
-msgpack = "^1.0.5"
 
 [tool.poetry.dev-dependencies]
 pre-commit = "^2.20.0"
@@ -37,7 +36,6 @@ pytest-httpserver = "^1.0.4"
 mypy = "^1.0.1"
 mongo-types = "^0.15.1"
 vendorize = "^0.3.0"
-pyfakefs = "^5.1.0"
 
 [tool.poetry-dynamic-versioning]
 enable = true
