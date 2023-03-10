@@ -20,6 +20,7 @@ class BaseRecordStorageTestSuite(ABC, Generic[T]):
     backend. It is intended to be subclassed by a test class for each storage
     backend.
     """
+
     @abstractmethod
     def storage(self) -> T:
         """Fixture to create a new storage instance."""

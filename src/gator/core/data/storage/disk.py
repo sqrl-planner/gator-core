@@ -21,6 +21,7 @@ class FileRecordStorage(BaseRecordStorage):
     Note that this implementation is not thread-safe and should not be used
     in a multi-threaded environment.
     """
+
     # Private Instance Attributes:
     #     _root_dir: The root directory to store the buckets in.
     _root_dir: Path

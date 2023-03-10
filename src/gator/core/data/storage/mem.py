@@ -15,6 +15,7 @@ class DictRecordStorage(BaseRecordStorage):
     application is restarted. This implementation is useful for testing
     purposes, but should not be used in production.
     """
+
     # Private Instance Attributes:
     #     _buckets: A dictionary of buckets, where each bucket is a
     #         dictionary of records, mapped by their IDs.
