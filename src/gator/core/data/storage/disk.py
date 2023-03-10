@@ -1,8 +1,9 @@
-"""Record storage implementations that rely on the filesystem."""
+"""Disk-based record storage backends."""
+import os
 import re
 import shutil
 from pathlib import Path
-from typing import Union
+from typing import Iterator, Union
 
 import msgpack
 
@@ -10,7 +11,7 @@ from gator.core.data.storage.base import BaseRecordStorage
 
 
 class FileRecordStorage(BaseRecordStorage):
-    """A file-based record storage implementation.
+    """A file-based record storage backend.
 
     Each record is stored in a separate file on disk using the MessagePack
     format. Its path is determined by the bucket ID and record ID. Each bucket
@@ -31,6 +32,10 @@ class FileRecordStorage(BaseRecordStorage):
             root_dir: The root directory to store the buckets in.
         """
         self._root_dir = Path(root_dir)
+
+    def get_buckets(self) -> set[str]:
+        """Return a set of all bucket IDs in arbitrary order."""
+        return set(os.listdir(self._root_dir))
 
     def bucket_exists(self, bucket_id: str) -> bool:
         """Check if a bucket exists.
@@ -57,11 +62,7 @@ class FileRecordStorage(BaseRecordStorage):
         record_path = self._get_record_path(bucket_id, record_id)
         return record_path.exists()
 
-    def get_buckets(self) -> list[str]:
-        """Return a list of all bucket IDs."""
-        return [bucket_dir.name for bucket_dir in self._root_dir.iterdir()]
-
-    def _bucket_new(self, bucket_id: str) -> None:
+    def _bucket_create(self, bucket_id: str) -> None:
         """Create a new bucket with the given ID.
 
         Note that this is an internal method and should not be called
@@ -74,26 +75,24 @@ class FileRecordStorage(BaseRecordStorage):
         bucket_dir = self._get_bucket_dir(bucket_id)
         bucket_dir.mkdir(parents=True)
 
-    def _bucket_del(self, bucket_id: str) -> bool:
+    def _bucket_delete(self, bucket_id: str) -> None:
         """Delete a bucket with the given ID.
 
         Note that this is an internal method and should not be called
         directly. Use `delete_bucket` instead.
 
         Args:
-            bucket_id: The ID of the bucket to delete.
-                Assumes that the bucket exists.
+            bucket_id: The ID of the bucket to delete. Assumes that the bucket
+                exists.
 
-        Returns:
-            True if the bucket was deleted, False if the bucket could not be
-            deleted.
+        Raises:
+            OSError: If the bucket directory could not be deleted.
         """
         bucket_dir = self._get_bucket_dir(bucket_id)
         try:
             shutil.rmtree(bucket_dir)
-            return True
-        except OSError:
-            return False
+        except OSError as e:
+            raise e
 
     def _bucket_clear(self, bucket_id: str) -> None:
         """Clear all records from the given bucket.
@@ -127,65 +126,57 @@ class FileRecordStorage(BaseRecordStorage):
         record_path = self._get_record_path(bucket_id, record_id)
         return self._unpack_record(record_path)
 
-    def _bucket_get(self, bucket_id: str) -> dict:
-        """Get all records from the given bucket.
+    def _records_iter(self, bucket_id: str) -> Iterator[tuple[str, dict]]:
+        """Lazy-load all records from the given bucket.
 
         Note that this is an internal method and should not be called
-        directly. Use `get_all` instead.
+        directly. Use `records_iter` instead.
 
         Args:
             bucket_id: The ID of the bucket to get all records from. Assumes
                 that the bucket exists.
 
-        Returns:
-            A dictionary of all records in the bucket, mapped by
-            their IDs. If the bucket is empty, an empty dictionary
-            will be returned.
+        Yields:
+            Tuples of the form (record_id, record) for each record in the
+            bucket. The records are yielded in an arbitrary order.
         """
         bucket_dir = self._get_bucket_dir(bucket_id)
-
-        records = {}
         for record_path in bucket_dir.iterdir():
-            record_id = record_path.stem
-            records[record_id] = self._unpack_record(record_path)
+            yield record_path.stem, self._unpack_record(record_path)
 
-        return records
-
-    def _record_put(self, bucket_id: str, record_id: str, record: dict,
-                    overwrite: bool = False) -> bool:
-        """Put a record with the given ID into the given bucket.
+    def _record_set(self, bucket_id: str, record_id: str, record: dict,
+                    overwrite: bool = False) -> None:
+        """Set a record with the given ID in the given bucket.
 
         Note that this is an internal method and should not be called
-        directly. Use `put` instead.
+        directly. Use `set_record` instead.
+
+        If `overwrite` is False and the record already exists, this method
+        should do nothing and silently fail. Otherwise, it should replace
+        the existing record with the new data.
 
         Args:
-            bucket_id: The ID of the bucket to put the record in. Assumes
+            bucket_id: The ID of the bucket to set the record in. Assumes
                 that the bucket exists.
-            record_id: The ID of the record to put. May or may not already
+            record_id: The ID of the record to set. May or may not already
                 exist.
-            record: The record to put.
+            record: The data to store in the record.
             overwrite: Whether to overwrite the record if it already
                 exists.
-
-        Returns:
-            A boolean indicating whether the record was successfully stored in
-            the bucket; False if the record already exists, and True otherwise.
         """
         record_path = self._get_record_path(bucket_id, record_id)
         if record_path.exists():
             if not overwrite:
-                return False
+                return
 
         with record_path.open('wb+') as f:
             f.write(msgpack.packb(record, use_bin_type=True))  # type: ignore
 
-        return True
-
-    def _record_del(self, bucket_id: str, record_id: str) -> bool:
+    def _record_delete(self, bucket_id: str, record_id: str) -> None:
         """Delete a record with the given ID from the given bucket.
 
         Note that this is an internal method and should not be called
-        directly. Use `delete` instead.
+        directly. Use `delete_record` instead.
 
         Args:
             bucket_id: The ID of the bucket to delete the record from. Assumes
@@ -193,16 +184,14 @@ class FileRecordStorage(BaseRecordStorage):
             record_id: The ID of the record to delete. Assumes that the record
                 exists.
 
-        Returns:
-            True if the record was deleted, False if the record could not be
-            deleted.
+        Raises:
+            OSError: If the record file could not be deleted.
         """
         record_path = self._get_record_path(bucket_id, record_id)
         try:
             record_path.unlink()
-            return True
-        except OSError:
-            return False
+        except OSError as e:
+            raise e
 
     def _unpack_record(self, record_path: Path) -> dict:
         """Unpack the record at the given path.
@@ -247,6 +236,7 @@ class FileRecordStorage(BaseRecordStorage):
     def _safe_filename(self, fn: str) -> str:
         """Escape the given string for use in a filename.
 
-        This will replace any non-alphanumeric characters with an underscore.
+        This will replace any non-alphanumeric characters with an underscore,
+        with the exception of periods and hyphens, which are allowed.
         """
-        return re.sub(r"[^a-zA-Z0-9_]", "_", fn)
+        return re.sub(r'[^a-zA-Z0-9_.-]', '_', fn)

@@ -664,6 +664,18 @@ pyyaml = ">=5.1"
 virtualenv = ">=20.10.0"
 
 [[package]]
+name = "pyfakefs"
+version = "5.1.0"
+description = "pyfakefs implements a fake file system that mocks the Python file system modules."
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "pyfakefs-5.1.0-py3-none-any.whl", hash = "sha256:e6f34a8224b41f1b1ab25aa8d430121dac42e3c6e981e01eae76b3343fba47d0"},
+    {file = "pyfakefs-5.1.0.tar.gz", hash = "sha256:316c6026640d14a6b4fbde71fd9674576d1b5710deda8fabde8aad51d785dbc3"},
+]
+
+[[package]]
 name = "pymongo"
 version = "4.3.3"
 description = "Python driver for MongoDB <http://www.mongodb.org>"
@@ -1078,4 +1090,4 @@ watchdog = ["watchdog"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "a5ec6755eb3f6410d1eee128e41d75786228d0e09a7182be4352ec3496c0f508"
+content-hash = "670dfa0a03de75b305a5dd44094f06bfbe1d554d52a478d1aeeb2682b2a91d21"

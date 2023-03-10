@@ -1,19 +1,95 @@
-"""Persistent record storage."""
+"""Base interface for all record storage backends."""
 import uuid
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Iterator, Optional
+
+
+class RecordNotFoundError(Exception):
+    """Raised when a record is not found in storage."""
+
+    def __init__(self, bucket_id: str, record_id: str) -> None:
+        """Initialize the exception.
+
+        Args:
+            bucket_id: The ID of the bucket that the record was not found in.
+            record_id: The ID of the record that was not found.
+        """
+        super().__init__(f'Record {record_id} not found in bucket {bucket_id}')
+
+
+class BucketNotFoundError(Exception):
+    """Raised when a bucket is not found in storage."""
+
+    def __init__(self, bucket_id: str) -> None:
+        """Initialize the exception.
+
+        Args:
+            bucket_id: The ID of the bucket that was not found.
+        """
+        super().__init__(f'Bucket {bucket_id} not found')
+
+
+class BucketExistsError(Exception):
+    """Raised when a bucket already exists in storage."""
+
+    def __init__(self, bucket_id: str) -> None:
+        """Initialize the exception.
+
+        Args:
+            bucket_id: The ID of the bucket that already exists.
+        """
+        super().__init__(f'Bucket {bucket_id} already exists')
+
+
+class RecordExistsError(Exception):
+    """Raised when a record already exists in storage."""
+
+    def __init__(self, bucket_id: str, record_id: str) -> None:
+        """Initialize the exception.
+
+        Args:
+            bucket_id: The ID of the bucket that the record already exists in.
+            record_id: The ID of the record that already exists.
+        """
+        super().__init__(f'Record {record_id} already exists in bucket {bucket_id}')
 
 
 class BaseRecordStorage(ABC):
-    """The base class for all record storage implementations.
+    """The base class for all record storage backends.
 
-    A storage implementation is responsible for storing and retrieving
-    records from a (possibly persistent) storage medium. All subclasses
-    must implement the `get`, `get_all`, `put`, and `delete` methods to
-    provide the necessary functionality.
+    A storage backend is responsible for storing and retrieving
+    records from a (possibly persistent) storage medium.
+
+    All subclasses must implement the following public abstract methods:
+        - `get_buckets() -> set[str]`: Return a set of all bucket IDs in
+            arbitrary order.
+        - `bucket_exists(bucket_id: str) -> bool`: Check if a bucket exists.
+        - `record_exists(bucket_id: str, record_id: str) -> bool`: Check if a
+            record exists in a bucket.
+
+    In addition, subclasses must implement the following protected abstract
+    methods (internal operations):
+        - `_bucket_create(bucket_id: str) -> None`: Create a new bucket with
+            the given ID assuming that the bucket does not already exist.
+        - `_bucket_delete(bucket_id: str) -> None`: Delete a bucket with the
+            given ID assuming that the bucket exists.
+        - `_bucket_clear(bucket_id: str) -> None`: Delete all records from a
+            bucket assuming that the bucket exists.
+        - `_record_get(bucket_id: str, record_id: str) -> dict`: Get a record
+            with the given ID from the given bucket assuming that the record
+            exists.
+        - `_records_iter(bucket_id: str) -> Iterator[tuple[str, dict]]`: Iterate
+            over all records in a bucket. The iterator should yield tuples of
+            the form `(record_id, record)`.
+        - `_record_set(bucket_id: str, record_id: str, record: dict) -> None`:
+            Set a record with the given ID in the given bucket assuming that
+            the record does not already exist.
+        - `_record_delete(bucket_id: str, record_id: str) -> None`: Delete a
+            record with the given ID from the given bucket assuming that the
+            record exists.
     """
 
-    def make_bucket(self, bucket_id: Optional[str] = None) -> str:
+    def create_bucket(self, bucket_id: Optional[str] = None) -> str:
         """Create a new bucket.
 
         Args:
@@ -24,38 +100,37 @@ class BaseRecordStorage(ABC):
             str: The ID of the bucket that was created.
 
         Raises:
-            ValueError: If the bucket already exists.
+            BucketExistsError: If a bucket with the given ID already exists.
         """
         if bucket_id is None:
             bucket_id = self._gen_bucket_id()
 
         if self.bucket_exists(bucket_id):
-            raise ValueError(f"Bucket '{bucket_id}' already exists.")
+            raise BucketExistsError(bucket_id)
 
-        self._bucket_new(bucket_id)
+        self._bucket_create(bucket_id)
         return bucket_id
 
-    def delete_bucket(self, bucket_id: str) -> bool:
+    def delete_bucket(self, bucket_id: str) -> None:
         """Delete a bucket.
 
         Args:
             bucket_id: The ID of the bucket to delete.
 
         Returns:
-            True if the bucket was deleted, False if the bucket did not exist
-            or could not be deleted.
+            True if the bucket was deleted and False otherwise.
+
+        Raises:
+            BucketNotFoundError: If the bucket does not exist.
         """
         if not self.bucket_exists(bucket_id):
-            return False
+            raise BucketNotFoundError(bucket_id)
 
-        try:
-            return self._bucket_del(bucket_id)
-        except:  # noqa: E722
-            return False
+        self._bucket_delete(bucket_id)
 
     @abstractmethod
-    def get_buckets(self) -> list[str]:
-        """Return a list of all bucket IDs."""
+    def get_buckets(self) -> set[str]:
+        """Return a set of all bucket IDs in arbitrary order."""
         raise NotImplementedError
 
     def delete_all_buckets(self) -> None:
@@ -68,21 +143,21 @@ class BaseRecordStorage(ABC):
         for bucket_id in self.get_buckets():
             self.delete_bucket(bucket_id)
 
-    def clear(self, bucket_id: str) -> None:
+    def clear_bucket(self, bucket_id: str) -> None:
         """Delete all records from a bucket.
 
         Args:
             bucket_id: The ID of the bucket to clear.
 
         Raises:
-            ValueError: If the bucket does not exist.
+            BucketNotFoundError: If the bucket does not exist.
         """
         if not self.bucket_exists(bucket_id):
-            raise ValueError(f"Bucket '{bucket_id}' does not exist.")
+            raise BucketNotFoundError(bucket_id)
 
         self._bucket_clear(bucket_id)
 
-    def get(self, bucket_id: str, record_id: str) -> Optional[dict]:
+    def get_record(self, bucket_id: str, record_id: str) -> dict:
         """Get a record with the given ID from the given bucket.
 
         Args:
@@ -90,71 +165,103 @@ class BaseRecordStorage(ABC):
             record_id: The ID of the record to get.
 
         Returns:
-            The record, or None if the record does not exist.
+            The record with the given ID from the given bucket.
+
+        Raises:
+            BucketNotFoundError: If the bucket does not exist.
+            RecordNotFoundError: If the record does not exist.
         """
+        if not self.bucket_exists(bucket_id):
+            raise BucketNotFoundError(bucket_id)
+
         if not self.record_exists(bucket_id, record_id):
-            return None
+            raise RecordNotFoundError(bucket_id, record_id)
 
         return self._record_get(bucket_id, record_id)
 
-    def get_all(self, bucket_id: str) -> Optional[dict]:
-        """Get all records from the given bucket.
+    def records_iter(self, bucket_id: str) -> Iterator[tuple[str, dict]]:
+        """Lazy-load all records from the given bucket.
+
+        Args:
+            bucket_id: The ID of the bucket to get all records from.
+
+        Yields:
+            Tuples of the form (record_id, record) for each record in the
+            bucket. The records are yielded in an arbitrary order.
+
+        Raises:
+            BucketNotFoundError: If the bucket does not exist.
+        """
+        if not self.bucket_exists(bucket_id):
+            raise BucketNotFoundError(bucket_id)
+
+        yield from self._records_iter(bucket_id)
+
+    def get_records(self, bucket_id: str) -> dict[str, dict]:
+        """Get all records from the given bucket mapped by their IDs.
 
         Args:
             bucket_id: The ID of the bucket to get all records from.
 
         Returns:
-            A dictionary of all records in the bucket, mapped by
-            their IDs, or None if the bucket does not exist. If the
-            bucket exists but is empty, an empty dictionary will be
-            returned.
+            A dictionary mapping record IDs to records.
+
+        Raises:
+            BucketNotFoundError: If the bucket does not exist.
         """
         if not self.bucket_exists(bucket_id):
-            return None
+            raise BucketNotFoundError(bucket_id)
 
-        return self._bucket_get(bucket_id)
+        return {k: v for k, v in self.records_iter(bucket_id)}
 
-    def put(self, bucket_id: str, record_id: str, record: dict,
-            overwrite: bool = False, auto_create: bool = False) -> bool:
-        """Put a record with the given ID into the given bucket.
+    def set_record(self, bucket_id: str, record_id: str, record: dict,
+                   overwrite: bool = False, auto_create: bool = False) -> None:
+        """Set a record with the given ID in the given bucket.
 
         Args:
-            bucket_id: The ID of the bucket to put the record in.
-            record_id: The ID of the record to put.
-            record: The record to put.
+            bucket_id: The ID of the bucket to set the record in.
+            record_id: The ID of the record to set.
+            record: The data to store in the record.
             overwrite: Whether to overwrite the record if it already
                 exists.
             auto_create: Whether to automatically create the bucket if it
                 does not exist.
 
-        Returns:
-            A boolean indicating whether the record was successfully stored in
-            the bucket; False if the bucket does not exist or the record already
-            exists and `overwrite` is False, and True otherwise.
+        Raises:
+            BucketNotFoundError: If the bucket does not exist and
+                `auto_create` is False.
+            RecordExistsError: If the record already exists and
+                `overwrite` is False.
         """
         if not self.bucket_exists(bucket_id):
             if auto_create:
-                self.make_bucket(bucket_id)
+                self.create_bucket(bucket_id)
             else:
-                return False
+                raise BucketNotFoundError(bucket_id)
 
-        return self._record_put(bucket_id, record_id, record, overwrite)
+        if self.record_exists(bucket_id, record_id) and not overwrite:
+            raise RecordExistsError(bucket_id, record_id)
+        else:
+            self._record_set(bucket_id, record_id, record, overwrite)
 
-    def delete(self, bucket_id: str, record_id: str) -> bool:
+    def delete_record(self, bucket_id: str, record_id: str) -> None:
         """Delete a record with the given ID from the given bucket.
 
         Args:
             bucket_id: The ID of the bucket to delete the record from.
             record_id: The ID of the record to delete.
 
-        Returns:
-            A boolean indicating whether the record was successfully deleted
-            from the bucket; False if the record does not exist, and True otherwise.
+        Raises:
+            BucketNotFoundError: If the bucket does not exist.
+            RecordNotFoundError: If the record does not exist.
         """
-        if not self.record_exists(bucket_id, record_id):
-            return False
+        if not self.bucket_exists(bucket_id):
+            raise BucketNotFoundError(bucket_id)
 
-        return self._record_del(bucket_id, record_id)
+        if not self.record_exists(bucket_id, record_id):
+            raise RecordNotFoundError(bucket_id, record_id)
+
+        self._record_delete(bucket_id, record_id)
 
     @abstractmethod
     def bucket_exists(self, bucket_id: str) -> bool:
@@ -182,11 +289,11 @@ class BaseRecordStorage(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def _bucket_new(self, bucket_id: str) -> None:
+    def _bucket_create(self, bucket_id: str) -> None:
         """Create a new bucket with the given ID.
 
         Note that this is an internal method and should not be called
-        directly. Use `make_bucket` instead.
+        directly. Use `create_bucket` instead.
 
         Args:
             bucket_id: The ID of the bucket to create. Assumes that the bucket
@@ -195,19 +302,14 @@ class BaseRecordStorage(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def _bucket_del(self, bucket_id: str) -> bool:
+    def _bucket_delete(self, bucket_id: str) -> None:
         """Delete a bucket with the given ID.
 
         Note that this is an internal method and should not be called
         directly. Use `delete_bucket` instead.
 
         Args:
-            bucket_id: The ID of the bucket to delete.
-                Assumes that the bucket exists.
-
-        Returns:
-            True if the bucket was deleted, False if the bucket could not be
-            deleted.
+            bucket_id: The ID of the bucket to delete. Assumes that the bucket exists.
         """
         raise NotImplementedError
 
@@ -216,7 +318,7 @@ class BaseRecordStorage(ABC):
         """Delete all records from a bucket.
 
         Note that this is an internal method and should not be called
-        directly. Use `clear` instead.
+        directly. Use `clear_bucket` instead.
 
         Args:
             bucket_id: The ID of the bucket to clear. Assumes that the
@@ -229,7 +331,7 @@ class BaseRecordStorage(ABC):
         """Get a record with the given ID from the given bucket.
 
         Note that this is an internal method and should not be called
-        directly. Use `get` instead.
+        directly. Use `get_record` instead.
 
         Args:
             bucket_id: The ID of the bucket to get the record from. Assumes
@@ -243,62 +345,57 @@ class BaseRecordStorage(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def _bucket_get(self, bucket_id: str) -> dict:
-        """Get all records from the given bucket.
+    def _records_iter(self, bucket_id: str) -> Iterator[tuple[str, dict]]:
+        """Lazy-load all records from the given bucket.
 
         Note that this is an internal method and should not be called
-        directly. Use `get_all` instead.
+        directly. Use `records_iter` instead.
 
         Args:
             bucket_id: The ID of the bucket to get all records from. Assumes
                 that the bucket exists.
 
-        Returns:
-            A dictionary of all records in the bucket, mapped by
-            their IDs. If the bucket is empty, an empty dictionary
-            will be returned.
+        Yields:
+            Tuples of the form (record_id, record) for each record in the
+            bucket. The records are yielded in an arbitrary order.
         """
         raise NotImplementedError
 
     @abstractmethod
-    def _record_put(self, bucket_id: str, record_id: str, record: dict,
-                    overwrite: bool = False) -> bool:
-        """Put a record with the given ID into the given bucket.
+    def _record_set(self, bucket_id: str, record_id: str, record: dict,
+                    overwrite: bool = False) -> None:
+        """Set a record with the given ID in the given bucket.
 
         Note that this is an internal method and should not be called
-        directly. Use `put` instead.
+        directly. Use `set_record` instead.
+
+        If `overwrite` is False and the record already exists, this method
+        should do nothing and silently fail. Otherwise, it should replace
+        the existing record with the new data.
 
         Args:
-            bucket_id: The ID of the bucket to put the record in. Assumes
+            bucket_id: The ID of the bucket to set the record in. Assumes
                 that the bucket exists.
-            record_id: The ID of the record to put. May or may not already
+            record_id: The ID of the record to set. May or may not already
                 exist.
-            record: The record to put.
+            record: The data to store in the record.
             overwrite: Whether to overwrite the record if it already
                 exists.
-
-        Returns:
-            A boolean indicating whether the record was successfully stored in
-            the bucket; False if the record already exists, and True otherwise.
         """
         raise NotImplementedError
 
     @abstractmethod
-    def _record_del(self, bucket_id: str, record_id: str) -> bool:
+    def _record_delete(self, bucket_id: str, record_id: str) -> None:
         """Delete a record with the given ID from the given bucket.
 
         Note that this is an internal method and should not be called
-        directly. Use `delete` instead.
+        directly. Use `delete_record` instead.
 
         Args:
             bucket_id: The ID of the bucket to delete the record from. Assumes
                 that the bucket exists.
             record_id: The ID of the record to delete. Assumes that the record
                 exists.
-
-        Returns:
-            True if the record was deleted, False if the record could not be
-            deleted.
         """
         raise NotImplementedError
 
@@ -309,167 +406,3 @@ class BaseRecordStorage(ABC):
             str: A new bucket ID.
         """
         return uuid.uuid4().hex
-
-
-class InMemoryRecordStorage(BaseRecordStorage):
-    """An in-memory record storage implementation.
-
-    This will store all records in memory using a dictionary. Note that
-    this implementation is not persistent and will be lost when the
-    application is restarted. This implementation is useful for testing
-    purposes, but should not be used in production.
-    """
-    # Private Instance Attributes:
-    #     _buckets: A dictionary of buckets, where each bucket is a
-    #         dictionary of records, mapped by their IDs.
-    _buckets: dict[str, dict[str, dict]]
-
-    def __init__(self) -> None:
-        """Initialize the storage."""
-        self._buckets = {}
-
-    def bucket_exists(self, bucket_id: str) -> bool:
-        """Check if a bucket exists.
-
-        Args:
-            bucket_id: The ID of the bucket to check.
-
-        Returns:
-            True if the bucket exists, False otherwise.
-        """
-        return bucket_id in self._buckets
-
-    def record_exists(self, bucket_id: str, record_id: str) -> bool:
-        """Check if a record exists.
-
-        Args:
-            bucket_id: The ID of the bucket to check.
-            record_id: The ID of the record to check.
-
-        Returns:
-            True if the record exists, False otherwise.
-        """
-        return record_id in self._buckets[bucket_id]
-
-    def get_buckets(self) -> list[str]:
-        """Return a list of all bucket IDs."""
-        return list(self._buckets.keys())
-
-    def _bucket_new(self, bucket_id: str) -> None:
-        """Create a new bucket with the given ID.
-
-        Note that this is an internal method and should not be called
-        directly. Use `make_bucket` instead.
-
-        Args:
-            bucket_id: The ID of the bucket to create. Assumes that the bucket
-            does not already exist.
-        """
-        self._buckets[bucket_id] = {}
-
-    def _bucket_del(self, bucket_id: str) -> bool:
-        """Delete a bucket with the given ID.
-
-        Note that this is an internal method and should not be called
-        directly. Use `delete_bucket` instead.
-
-        Args:
-            bucket_id: The ID of the bucket to delete. Assumes that the bucket
-                exists.
-
-        Returns:
-            True if the bucket was deleted, False if the bucket could not be
-            deleted.
-        """
-        del self._buckets[bucket_id]
-        return True
-
-    def _bucket_clear(self, bucket_id: str) -> None:
-        """Clear all records from the given bucket.
-
-        Note that this is an internal method and should not be called
-        directly. Use `clear` instead.
-
-        Args:
-            bucket_id: The ID of the bucket to clear. Assumes that the
-                bucket exists.
-        """
-        self._buckets[bucket_id] = {}
-
-    def _record_get(self, bucket_id: str, record_id: str) -> dict:
-        """Get a record with the given ID from the given bucket.
-
-        Note that this is an internal method and should not be called
-        directly. Use `get` instead.
-
-        Args:
-            bucket_id: The ID of the bucket to get the record from. Assumes
-                that the bucket exists.
-            record_id: The ID of the record to get. Assumes that the record
-                exists.
-
-        Returns:
-            The record.
-        """
-        return self._buckets[bucket_id][record_id]
-
-    def _bucket_get(self, bucket_id: str) -> dict:
-        """Get all records from the given bucket.
-
-        Note that this is an internal method and should not be called
-        directly. Use `get_all` instead.
-
-        Args:
-            bucket_id: The ID of the bucket to get all records from. Assumes
-                that the bucket exists.
-
-        Returns:
-            A dictionary of all records in the bucket, mapped by
-            their IDs. If the bucket is empty, an empty dictionary
-            will be returned.
-        """
-        return self._buckets[bucket_id]
-
-    def _record_put(self, bucket_id: str, record_id: str, record: dict,
-                    overwrite: bool = False) -> bool:
-        """Put a record with the given ID into the given bucket.
-
-        Note that this is an internal method and should not be called
-        directly. Use `put` instead.
-
-        Args:
-            bucket_id: The ID of the bucket to put the record in. Assumes
-                that the bucket exists.
-            record_id: The ID of the record to put. May or may not already
-                exist.
-            record: The record to put.
-            overwrite: Whether to overwrite the record if it already
-                exists.
-
-        Returns:
-            A boolean indicating whether the record was successfully stored in
-            the bucket; False if the record already exists, and True otherwise.
-        """
-        if record_id in self._buckets[bucket_id] and not overwrite:
-            return False
-        self._buckets[bucket_id][record_id] = record
-        return True
-
-    def _record_del(self, bucket_id: str, record_id: str) -> bool:
-        """Delete a record with the given ID from the given bucket.
-
-        Note that this is an internal method and should not be called
-        directly. Use `delete` instead.
-
-        Args:
-            bucket_id: The ID of the bucket to delete the record from. Assumes
-                that the bucket exists.
-            record_id: The ID of the record to delete. Assumes that the record
-                exists.
-
-        Returns:
-            True if the record was deleted, False if the record could not be
-            deleted.
-        """
-        del self._buckets[bucket_id][record_id]
-        return True

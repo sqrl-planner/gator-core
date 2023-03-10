@@ -37,6 +37,7 @@ pytest-httpserver = "^1.0.4"
 mypy = "^1.0.1"
 mongo-types = "^0.15.1"
 vendorize = "^0.3.0"
+pyfakefs = "^5.1.0"
 
 [tool.poetry-dynamic-versioning]
 enable = true
