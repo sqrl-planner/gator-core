@@ -15,3 +15,9 @@ class TestFileRecordStorage(BaseRecordStorageTestSuite[FileRecordStorage]):
         """Fixture to create a new storage instance."""
         fs.create_dir(self._ROOT_DIR)
         return FileRecordStorage(self._ROOT_DIR)
+
+    def test_safe_filename(self, storage: FileRecordStorage) -> None:
+        """Test that the safe filename function works correctly."""
+        # Ensure that non-alphanumeric characters are replaced with underscores
+        # Except for hyphens and periods, which are allowed
+        assert storage._safe_filename('http://example.com/hello-world') == 'http___example.com_hello-world'
