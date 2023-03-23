@@ -27,6 +27,12 @@ class Session(EmbeddedDocument):
     Instance Attributes:
         year: The year of the session. Must be between 0 and 9999.
         season: The season of the session.
+        subsession: The subsession of the session, if any. This is only used for
+            the summer session, which is divided into two subsessions: the first
+            subsession runs from May to June, and the second subsession runs from
+            July to August. Must be one of: `first`, `second`, or `whole`
+            for the first and second subsessions, and the whole summer session
+            respectively.
     """
 
     # Private Class Attributes:
@@ -39,14 +45,18 @@ class Session(EmbeddedDocument):
 
     year: int = fields.IntField(required=True, min_value=0, max_value=9999)  # type: ignore
     season: str = fields.StringField(required=True, choices=list(_SEASON_MAP.keys()))  # type: ignore
+    subsession: str = fields.StringField(
+        choices=['first', 'second', 'whole'])  # type: ignore
 
-    def __init__(self, year: int, season: str, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, year: int, season: str, subsession: str = 'whole',
+                 *args: Any, **kwargs: Any) -> None:
         """Initialize a session with the given year and season.
 
         Args:
             year: The year of the session. Must be between 0 and 9999.
             season: The season of the session.
-
+            subsession: The subsession of the session, if any.
+            
         Note:
             The year and season are passed as positional arguments for
             convenience, but they are actually stored as keyword arguments
@@ -56,6 +66,7 @@ class Session(EmbeddedDocument):
         """
         kwargs['year'] = year
         kwargs['season'] = season
+        kwargs['subsession'] = subsession
         super().__init__(*args, **kwargs)
 
     @property
@@ -72,7 +83,11 @@ class Session(EmbeddedDocument):
             '20209'
             >>> Session(2019, 'winter').code
             '20191'
-            >>> Session(1966, 'summer').code
+            >>> Session(1966, 'summer', subsession='first').code
+            '19665F'
+            >>> Session(1966, 'summer', subsession='second').code
+            '19665S'
+            >>> Session(1966, 'summer', subsession='whole').code
             '19665'
         """
         return f'{str(self.year).zfill(4)}{self._SEASON_MAP[self.season]}'
@@ -450,3 +465,36 @@ class Course(Document):
             return 0
         else:
             return int(math.floor(int(m.group(1)) / 100.0)) * 100
+.group(1)) / 100.0)) * 100
+
+    @property
+    @lru_cache
+    def session(self) -> Session:
+        """Return the session of this course."""
+        return Session.parse(self.session_code)
+
+    def __str__(self):
+        """Return a string representation of this course."""
+        return f'{self.code}: {self.title}'
+.group(1)) / 100.0)) * 100
+
+    @property
+    @lru_cache
+    def session(self) -> Session:
+        """Return the session of this course."""
+        return Session.parse(self.session_code)
+
+    def __str__(self):
+        """Return a string representation of this course."""
+        return f'{self.code}: {self.title}'
+.group(1)) / 100.0)) * 100
+
+    @property
+    @lru_cache
+    def session(self) -> Session:
+        """Return the session of this course."""
+        return Session.parse(self.session_code)
+
+    def __str__(self):
+        """Return a string representation of this course."""
+        return f'{self.code}: {self.title}'
