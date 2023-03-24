@@ -9,151 +9,120 @@ from mongoengine import Document, EmbeddedDocument, fields
 from gator.core.models.common import SerializableEnum
 from gator.core.models.institution import Institution, Location
 
-
 class Session(EmbeddedDocument):
     """A formal division of the academic year.
 
-    The regular academic year is divided into three sessions: the fall session,
-    which runs from September to December; the winter (spring) session, which
-    runs from January to April; and the summer session, which runs from May to
-    August.
-
-    The canonical representation of a session is a five-length string where the
-    first four characters denote the session year, and the last character denotes
-    the session season, 9 for fall, 1 for winter, and 5 for summer. For example,
-    the code `20209` denotes the fall session of 2020, and the code `19665`
-    denotes the summer session of 1966.
+    The regular academic year is divided into two seasons:
+        - the regular season, which runs from September to April
+        - the summer season, which runs from May to August
+    
+    Each season is divided into two subsessions:
+        - the first subsession
+            The first subsession runs from September to December for the regular
+            season, and from May to June for the summer season.
+        - the second subsession
+            The second subsession runs from January to April for the regular
+            season, and from July to August for the summer season.
+    
+    An offering of a course has a list of sessions, where each session
+    corresponds to a specific subsession of a specific season. For example,
+    an offering of a course that runs from September to April would have
+    two sessions: one for the regular season's first subsession, and one
+    for the regular season's second subsession.
 
     Instance Attributes:
-        year: The year of the session. Must be between 0 and 9999.
+        year: The year in which the season of the session starts.
+            This is the year in which the first subsession of the season starts.
         season: The season of the session.
-        subsession: The subsession of the session, if any. This is only used for
-            the summer session, which is divided into two subsessions: the first
-            subsession runs from May to June, and the second subsession runs from
-            July to August. Must be one of: `first`, `second`, or `whole`
-            for the first and second subsessions, and the whole summer session
-            respectively.
+        subsession: The subsession of the session. Can be first, second, or whole.
     """
-
-    # Private Class Attributes:
-    #     _SEASON_MAP: A mapping from season names to their corresponding
-    #         session codes.
-    #     _INVERSE_SEASON_MAP: A mapping from session codes to their
-    #         corresponding season names.
-    _SEASON_MAP: dict[str, int] = {'fall': 9, 'winter': 1, 'summer': 5}
-    _INVERSE_SEASON_MAP: dict[int, str] = {v: k for k, v in _SEASON_MAP.items()}
-
     year: int = fields.IntField(required=True, min_value=0, max_value=9999)  # type: ignore
-    season: str = fields.StringField(required=True, choices=list(_SEASON_MAP.keys()))  # type: ignore
-    subsession: str = fields.StringField(
-        choices=['first', 'second', 'whole'])  # type: ignore
+    season: str = fields.StringField(required=True, choices=['regular', 'summer'])  # type: ignore
+    subsession: str = fields.StringField(required=True, choices=['first', 'second', 'whole'])  # type: ignore
 
-    def __init__(self, year: int, season: str, subsession: str = 'whole',
-                 *args: Any, **kwargs: Any) -> None:
-        """Initialize a session with the given year and season.
+    def __init__(self, year: int, season: str, subsession: str, *args: Any, **kwargs: Any) -> None:
+        """Initialize a session with the given year, season, and subsession.
 
         Args:
             year: The year of the session. Must be between 0 and 9999.
             season: The season of the session.
-            subsession: The subsession of the session, if any.
+            subsession: The subsession of the session.
             
         Note:
-            The year and season are passed as positional arguments for
-            convenience, but they are actually stored as keyword arguments
-            in the `kwargs` dictionary. If `year` and `season` are passed
-            as keyword arguments, they will be ignored, meaning that the
-            positional arguments always take precedence.
+            The year, season, and subsession are passed as positional arguments
+            for convenience, but they are actually stored as keyword arguments
+            in the `kwargs` dictionary. If `year`, `season`, or `subsession`
+            are passed as keyword arguments, they will be ignored, meaning that
+            the positional arguments always take precedence.
         """
         kwargs['year'] = year
         kwargs['season'] = season
         kwargs['subsession'] = subsession
         super().__init__(*args, **kwargs)
-
+    
     @property
     def code(self) -> str:
-        """The canonical representation of this session.
+        """Return the canonical representation of the session.
 
-        Returns:
-            A five-length string where the first four characters denote the
-            session year, and the last character denotes the session season,
-            9 for fall, 1 for winter, and 5 for summer.
+        The canonical representation of a session is a string whose format depends on the
+        season of the session.
 
         Examples:
-            >>> Session(2020, 'fall').code
-            '20209'
-            >>> Session(2019, 'winter').code
-            '20191'
-            >>> Session(1966, 'summer', subsession='first').code
-            '19665F'
-            >>> Session(1966, 'summer', subsession='second').code
-            '19665S'
-            >>> Session(1966, 'summer', subsession='whole').code
-            '19665'
+            >>> Session(2022, 'regular', 'first').code
+            '20229'
+            >>> Session(2022, 'regular', 'second').code
+            '20231'
+            >>> Session(2022, 'regular', 'whole').code
+            '20229-20231'
+            >>> Session(2023, 'summer', 'first').code
+            '20235F'
+            >>> Session(2023, 'summer', 'second').code
+            '20235S'
+            >>> Session(2023, 'summer', 'whole').code
+            '20235'
         """
-        return f'{str(self.year).zfill(4)}{self._SEASON_MAP[self.season]}'
+        assert self.season in ['regular', 'summer']
 
-    @property
-    def human_str(self) -> str:
-        """A human-readable representation of this session.
-
-        Examples:
-            >>> Session(2020, 'fall').human_str
-            'Fall 2020'
-            >>> Session(2019, 'winter').human_str
-            'Winter 2019'
-            >>> Session(1966, 'summer').human_str
-            'Summer 1966'
-        """
-        return f'{self.season.capitalize()} {self.year}'
-
+        if self.season == 'regular':
+            if self.subsession == 'first':
+                return f'{self.year}9'
+            elif self.subsession == 'second':
+                return f'{self.year}1'
+            else:
+                return f'{self.year}9-{self.year}1'
+        else:
+            if self.subsession == 'first':
+                return f'{self.year}5F'
+            elif self.subsession == 'second':
+                return f'{self.year}5S'
+            else:
+                return f'{self.year}5'
+        
     def __str__(self) -> str:
-        """Return a string representation of this session.
-
-        The output string is the session code. See `code` for more
-        information.
-        """
+        """Return a string representation of the session."""
         return self.code
-
+    
     @classmethod
-    def parse(cls, session_code: Union[str, int]) -> 'Session':
-        """Return an instance Session representing the given session code.
-
-        Raise a ValueError if the session code is not formatted properly.
+    def from_code(cls, code: str) -> 'Session':
+        """Return a session from its canonical representation.
 
         Args:
-            session_code: The session code to parse as a string or integer.
-                If the session code is an integer, it will be converted to a
-                string and zero-padded to the left if necessary. E.g. if
-                509 is passed, it will be converted to '00509' which corresponds
-                to the fall session of the year 50.
-
-        Examples:
-            >>> Session.parse(509) == Session(year=50, season='fall')
-            True
-            >>> Session.parse(20201) == Session(year=2020, season='winter')
-            True
-            >>> Session.parse('20205') == Session(year=2020, season='summer')
-            True
+            code: The canonical representation of the session.
+        
+        Raises:
+            ValueError: If the given code is not a valid session code.
         """
-        # Ensure that the session code is a string and zero-padded to the left
-        session_code = str(session_code).zfill(5)
-
-        if len(session_code) != 5:
-            raise ValueError(
-                f'invalid session code ("{session_code}"): expected string of length 5'
-                f', not {len(session_code)}')
-        elif not session_code.isnumeric():
-            raise ValueError(
-                f'invalid session code ("{session_code}"): expected numeric string')
-        elif int(session_code[-1]) not in cls._INVERSE_SEASON_MAP:
-            raise ValueError(
-                f'invalid session code ("{session_code}"): expected code to end in '
-                f'one of {list(cls._INVERSE_SEASON_MAP.keys())}, not {session_code[-1]}')
+        if re.match(r'^\d{4}[9|1]$', code):
+            return cls(int(code[:4]), 'regular', 'first' if code[4] == '9' else 'second')
+        elif re.match(r'^\d{4}9-\d{4}1$', code):
+            return cls(int(code[:4]), 'regular', 'whole')
+        elif re.match(r'^\d{4}5(F|S)$', code):
+            return cls(int(code[:4]), 'summer', 'first' if code[4] == 'F' else 'second')
+        elif re.match(r'^\d{4}5$', code):
+            return cls(int(code[:4]), 'summer', 'whole')
         else:
-            return Session(
-                int(session_code[:4]),
-                cls._INVERSE_SEASON_MAP[int(session_code[-1])])
-
+            raise ValueError(f'Invalid session code: {code}')
+        
 
 class WeeklyRepetitionSchedule(EmbeddedDocument):
     """A schedule for an event that repeats weekly.
@@ -465,36 +434,3 @@ class Course(Document):
             return 0
         else:
             return int(math.floor(int(m.group(1)) / 100.0)) * 100
-.group(1)) / 100.0)) * 100
-
-    @property
-    @lru_cache
-    def session(self) -> Session:
-        """Return the session of this course."""
-        return Session.parse(self.session_code)
-
-    def __str__(self):
-        """Return a string representation of this course."""
-        return f'{self.code}: {self.title}'
-.group(1)) / 100.0)) * 100
-
-    @property
-    @lru_cache
-    def session(self) -> Session:
-        """Return the session of this course."""
-        return Session.parse(self.session_code)
-
-    def __str__(self):
-        """Return a string representation of this course."""
-        return f'{self.code}: {self.title}'
-.group(1)) / 100.0)) * 100
-
-    @property
-    @lru_cache
-    def session(self) -> Session:
-        """Return the session of this course."""
-        return Session.parse(self.session_code)
-
-    def __str__(self):
-        """Return a string representation of this course."""
-        return f'{self.code}: {self.title}'
