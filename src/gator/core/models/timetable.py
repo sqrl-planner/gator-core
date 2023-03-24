@@ -9,13 +9,14 @@ from mongoengine import Document, EmbeddedDocument, fields
 from gator.core.models.common import SerializableEnum
 from gator.core.models.institution import Institution, Location
 
+
 class Session(EmbeddedDocument):
     """A formal division of the academic year.
 
     The regular academic year is divided into two seasons:
         - the regular season, which runs from September to April
         - the summer season, which runs from May to August
-    
+
     Each season is divided into two subsessions:
         - the first subsession
             The first subsession runs from September to December for the regular
@@ -23,7 +24,7 @@ class Session(EmbeddedDocument):
         - the second subsession
             The second subsession runs from January to April for the regular
             season, and from July to August for the summer season.
-    
+
     An offering of a course has a list of sessions, where each session
     corresponds to a specific subsession of a specific season. For example,
     an offering of a course that runs from September to April would have
@@ -47,7 +48,7 @@ class Session(EmbeddedDocument):
             year: The year of the session. Must be between 0 and 9999.
             season: The season of the session.
             subsession: The subsession of the session.
-            
+
         Note:
             The year, season, and subsession are passed as positional arguments
             for convenience, but they are actually stored as keyword arguments
@@ -59,7 +60,7 @@ class Session(EmbeddedDocument):
         kwargs['season'] = season
         kwargs['subsession'] = subsession
         super().__init__(*args, **kwargs)
-    
+
     @property
     def code(self) -> str:
         """Return the canonical representation of the session.
@@ -97,18 +98,18 @@ class Session(EmbeddedDocument):
                 return f'{self.year}5S'
             else:
                 return f'{self.year}5'
-        
+
     def __str__(self) -> str:
         """Return a string representation of the session."""
         return self.code
-    
+
     @classmethod
     def from_code(cls, code: str) -> 'Session':
         """Return a session from its canonical representation.
 
         Args:
             code: The canonical representation of the session.
-        
+
         Raises:
             ValueError: If the given code is not a valid session code.
         """
@@ -122,7 +123,7 @@ class Session(EmbeddedDocument):
             return cls(int(code[:4]), 'summer', 'whole')
         else:
             raise ValueError(f'Invalid session code: {code}')
-        
+
 
 class WeeklyRepetitionSchedule(EmbeddedDocument):
     """A schedule for an event that repeats weekly.
