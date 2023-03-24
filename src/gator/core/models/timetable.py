@@ -37,6 +37,18 @@ class Session(EmbeddedDocument):
         season: The season of the session.
         subsession: The subsession of the session. Can be first, second, or whole.
     """
+    # Private Class Attributes:
+    #    _SUBSESSION_MAP: A mapping from season name to all the valid subsession codes in that season, indexed by subsession name.
+    #    __INVERSE_SUBSESSION_MAP: A mapping from season name to all the subsessions in that season, indexed by subsession code.
+
+    _SUBSESSION_MAP: dict[str, dict[str, str]] = {
+        'regular': {'first': '9', 'second': '1'},
+        'summer': {'first': '5F', 'second': '5S', 'whole': '5'}
+    }
+    _INVERSE_SUBSESSION_MAP: dict[str, dict[str, str]] = {
+        s: {v: k for k, v in d.items()} for s, d in _SUBSESSION_MAP.items()
+    }
+
     year: int = fields.IntField(required=True, min_value=0, max_value=9999)  # type: ignore
     season: str = fields.StringField(required=True, choices=['regular', 'summer'])  # type: ignore
     subsession: str = fields.StringField(required=True, choices=['first', 'second', 'whole'])  # type: ignore
@@ -82,26 +94,42 @@ class Session(EmbeddedDocument):
             >>> Session(2023, 'summer', 'whole').code
             '20235'
         """
-        assert self.season in ['regular', 'summer']
+        if self.subsession == 'whole':
+            return f'{self.year}{self._SUBSESSION_MAP[self.season]["first"]}-{self.year}{self._SUBSESSION_MAP[self.season]["second"]}'
 
-        if self.season == 'regular':
-            if self.subsession == 'first':
-                return f'{self.year}9'
-            elif self.subsession == 'second':
-                return f'{self.year}1'
-            else:
-                return f'{self.year}9-{self.year}1'
-        else:
-            if self.subsession == 'first':
-                return f'{self.year}5F'
-            elif self.subsession == 'second':
-                return f'{self.year}5S'
-            else:
-                return f'{self.year}5'
+        return f'{self.year}{self._SUBSESSION_MAP[self.season][self.subsession]}'
 
     def __str__(self) -> str:
         """Return a string representation of the session."""
         return self.code
+
+    @property
+    def human_str(self) -> str:
+        """A human-readable representation of this session.
+        Examples:
+            >>> Session(2020, 'regular', 'first').human_str
+            'Fall 2020'
+            >>> Session(2019, 'regular', 'second').human_str
+            'Winter 2019'
+            >>> Session(1966, 'summer', 'first').human_str
+            'Summer 1966, First Subsession'
+            >>> Session(1966, 'summer', 'whole').human_str
+            'Summer 1966, Whole Session'
+        """
+        if self.season == 'regular':
+            if self.subsession == 'first':
+                return f'Fall {self.year}'
+            elif self.subsession == 'second':
+                return f'Winter {self.year}'
+            else:
+                return f'Fall {self.year} - Winter {self.year}'
+        else:
+            if self.subsession == 'first':
+                return f'Summer {self.year}, First Subsession'
+            elif self.subsession == 'second':
+                return f'Summer {self.year}, Second Subsession'
+            else:
+                return f'Summer {self.year}, Whole Session'
 
     @classmethod
     def from_code(cls, code: str) -> 'Session':
@@ -113,16 +141,17 @@ class Session(EmbeddedDocument):
         Raises:
             ValueError: If the given code is not a valid session code.
         """
-        if re.match(r'^\d{4}[9|1]$', code):
-            return cls(int(code[:4]), 'regular', 'first' if code[4] == '9' else 'second')
-        elif re.match(r'^\d{4}9-\d{4}1$', code):
-            return cls(int(code[:4]), 'regular', 'whole')
-        elif re.match(r'^\d{4}5(F|S)$', code):
-            return cls(int(code[:4]), 'summer', 'first' if code[4] == 'F' else 'second')
-        elif re.match(r'^\d{4}5$', code):
-            return cls(int(code[:4]), 'summer', 'whole')
-        else:
-            raise ValueError(f'Invalid session code: {code}')
+        # if re.match(r'^\d{4}[9|1]$', code):
+        #     return cls(int(code[:4]), 'regular', 'first' if code[4] == '9' else 'second')
+        # elif re.match(r'^\d{4}9-\d{4}1$', code):
+        #     return cls(int(code[:4]), 'regular', 'whole')
+        # elif re.match(r'^\d{4}5(F|S)$', code):
+        #     return cls(int(code[:4]), 'summer', 'first' if code[4] == 'F' else 'second')
+        # elif re.match(r'^\d{4}5$', code):
+        #     return cls(int(code[:4]), 'summer', 'whole')
+        # else:
+        #     raise ValueError(f'Invalid session code: {code}')
+        raise NotImplementedError
 
 
 class WeeklyRepetitionSchedule(EmbeddedDocument):
