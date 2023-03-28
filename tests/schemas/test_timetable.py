@@ -20,15 +20,19 @@ class TestSessionSchema:
         DUMPED_SESSIONS: The dumped data for the sessions in `SESSIONS`.
     """
     SESSIONS: list[models.Session] = [
-        models.Session(2020, 'fall'),
-        models.Session(2021, 'winter'),
-        models.Session(1966, 'summer'),
+        models.Session(2022, 'regular', 'first'),  # Fall 2022
+        models.Session(2023, 'regular', 'second'),  # Winter 2023
+        models.Session(2022, 'regular', 'whole'),  # Fall 2022 - Winter 2023
+        models.Session(2023, 'summer', 'first'),  # Summer 2023 (First Subsession)
+        models.Session(2023, 'summer', 'second'),  # Summer 2023 (Second Subsession)
+        models.Session(2023, 'summer', 'whole'),  # Summer 2023 (Whole Session)
     ]
 
-    DUMPED_SESSIONS: list[dict] = [
-        {'year': session.year, 'season': session.season}  # type: ignore
-        for session in SESSIONS
-    ]
+    DUMPED_SESSIONS: list[dict] = [{
+        'year': session.year,
+        'season': session.season,
+        'subsession': session.subsession
+    } for session in SESSIONS]
 
     def setup_class(self) -> None:
         """Initialize the test class."""
