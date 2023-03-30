@@ -45,6 +45,8 @@ class Session(EmbeddedDocument):
     #       from season name to a mapping from subsession code to its name.
     #   _SUBSESSION_TO_SEASON_MAP: A mapping from subsession code to season
     #       name.
+    #   _SEASON_ORDER: A mapping from season name to its sort order.
+    #   _SUBSESSION_ORDER: A mapping from subsession name to its sort order.
     _SUBSESSION_MAP: dict[str, dict[str, str]] = {
         'regular': {'first': '9', 'second': '1'},
         'summer': {'first': '5F', 'second': '5S', 'whole': '5'}
@@ -54,6 +56,15 @@ class Session(EmbeddedDocument):
     }
     _SUBSESSION_TO_SEASON_MAP: dict[str, str] = {
         v: k for k, d in _SUBSESSION_MAP.items() for v in d.values()
+    }
+    _SEASON_ORDER: dict[str, int] = {
+        'regular': 0,
+        'summer': 1
+    }
+    _SUBSESSION_ORDER: dict[str, int] = {
+        'first': 0,
+        'second': 1,
+        'whole': 2
     }
 
     year: int = fields.IntField(required=True, min_value=0)  # type: ignore
@@ -182,6 +193,88 @@ class Session(EmbeddedDocument):
     def __repr__(self) -> str:
         """Return a string representation of the session."""
         return f'Session({self.year}, {self.season!r}, {self.subsession!r})'
+
+    def __eq__(self, other: 'Session') -> bool:
+        """Return whether this session is the same as another session.
+
+        Equality is defined as having the same year, season, and subsession.
+
+        Examples:
+            >>> Session(2022, 'regular', 'first') == Session(2022, 'regular', 'first')
+            True
+            >>> Session(1999, 'summer', 'whole') == Session(1999, 'summer', 'whole')
+            True
+            >>> Session(2022, 'regular', 'first') == Session(2022, 'regular', 'second')
+            False
+            >>> Session(2022, 'regular', 'first') == Session(2022, 'summer', 'first')
+            False
+        """
+        return all([
+            self.year == other.year,
+            self.season == other.season,
+            self.subsession == other.subsession,
+        ])
+
+    def __ne__(self, other: 'Session') -> bool:
+        """Return whether this session is not the same as another session.
+
+        Remarks:
+            This is the inverse of the :meth:`__eq__` method. See the
+            documentation of that method for more details.
+        """
+        return not self == other
+
+    def __lt__(self, other: 'Session') -> bool:
+        """Return whether this session occurs before the other session.
+
+        A session occurs before another if it is in an earlier year, same year
+        but in an earlier season (i.e. regular before summer), or same year and
+        season but in an earlier subsession (i.e. first before second or whole).
+
+        Examples:
+            >>> Session(2022, 'regular', 'first') < Session(2022, 'regular', 'second')
+            True
+            >>> Session(2022, 'regular', 'second') < Session(2022, 'regular', 'whole')
+            True
+            >>> Session(2022, 'regular', 'first') < Session(2022, 'summer', 'first')
+            True
+            >>> Session(2022, 'regular', 'first') < Session(2023, 'regular', 'first')
+            True
+            >>> Session(2022, 'regular', 'first') < Session(2022, 'regular', 'first')
+            False
+        """
+        return any([
+            # This session is in an EARLIER YEAR
+            self.year < other.year,
+            # This session is in the SAME YEAR but in an EARLIER SEASON
+            all([
+                self.year == other.year,
+                self._SEASON_ORDER[self.season] < self._SEASON_ORDER[other.season]
+            ]),
+            # This session is in the SAME YEAR and SEASON but in an EARLIER SUBSESSION
+            all([
+                self.year == other.year,
+                self._SEASON_ORDER[self.season] == self._SEASON_ORDER[other.season],
+                self._SUBSESSION_ORDER[self.subsession] < self._SUBSESSION_ORDER[other.subsession]
+            ])
+        ])
+
+    def __le__(self, other: 'Session') -> bool:
+        """Return whether this session occurs before or at the same time as another session."""
+        return self < other or self == other
+
+    def __gt__(self, other: 'Session') -> bool:
+        """Return whether this session occurs after the other session.
+
+        Remarks:
+            This is the inverse of the :meth:`__lt__` method. See the
+            documentation of that method for more details.
+        """
+        return not self < other
+
+    def __ge__(self, other: 'Session') -> bool:
+        """Return whether this session occurs after or at the same time as another session."""
+        return self > other or self == other
 
     @classmethod
     def from_code(cls, code: str) -> 'Session':
