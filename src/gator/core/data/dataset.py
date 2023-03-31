@@ -89,7 +89,7 @@ class SessionalDataset(Dataset):
         super().__init__()
         # Prefer the `sessions` argument. In the case it is None, use the
         # `session` argument if it is provided, otherwise default to None.
-        sessions = sessions or [session] if session is not None else None
+        sessions = sessions or ([session] if session is not None else None)
         if sessions is None:
             # Use the most up-to-date sessions
             self.sessions = self._get_latest_sessions()
