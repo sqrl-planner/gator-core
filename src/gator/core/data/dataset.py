@@ -72,8 +72,8 @@ class SessionalDataset(Dataset):
     sessions: list[Session]
 
     def __init__(self,
-                 sessions: Optional[list[Union[int, str, Session]]] = None,
-                 session: Optional[Union[int, str, Session]] = None) -> None:
+                 sessions: Optional[list[Union[str, Session]]] = None,
+                 session: Optional[Union[str, Session]] = None) -> None:
         """Initialize a SessionalDataset.
 
         Args:
@@ -96,7 +96,7 @@ class SessionalDataset(Dataset):
         else:
             # Parse the sessions
             self.sessions = [
-                Session.parse(session) if not isinstance(session, Session) else session
+                Session.from_code(session) if not isinstance(session, Session) else session
                 for session in sessions]
 
     @abstractclassmethod
