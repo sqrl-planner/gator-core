@@ -401,7 +401,7 @@ class SectionMeeting(EmbeddedDocument):
         day: The day of the week that this meeting occurs on, represented as an
             integer, where Monday is 0 and Sunday is 6.
         start_time: The time that this meeting starts, represented as the number
-            of milliseconds since midnight(00:00:00).
+            of milliseconds since midnight (00:00:00).
         end_time: The time that this meeting ends, represented as the number of
             milliseconds since midnight (00:00:00).
         session: The session that this meeting occurs in.
@@ -496,6 +496,9 @@ class Section(EmbeddedDocument):
         cancelled: Whether this section is cancelled.
         enrolment_info: The enrolment information for this section.
         notes: A list of HTML strings.
+        linked_sections: A list of sections that are linked to this section.
+            These are strings of the form 'LEC 001' or 'TUT 001' (i.e. teaching
+            method and section number).
     """
 
     teaching_method: TeachingMethod = fields.EnumField(TeachingMethod, required=True)  # type: ignore

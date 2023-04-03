@@ -37,20 +37,20 @@ class TestInstitutionSchema:
         'code': 'ARTSC',
         'name': 'Faculty of Arts and Science',
         'type': 'faculty',
-        'parent': 'UTSG'
+        '_parent': 'UTSG'
     }
     DUMPED_CAMPUS_INSTITUTION: dict = {
         'code': 'UTSG',
         'name': 'St. George Campus',
         'type': 'campus',
-        'parent': 'UofT',
-        'sub_institutions': ['ARTSC']
+        '_parent': 'UofT',
+        '_sub_institutions': ['ARTSC']
     }
     DUMPED_UNI_INSTITUTION: dict = {
         'code': 'UofT',
         'name': 'University of Toronto',
         'type': 'university',
-        'sub_institutions': ['UTSG']
+        '_sub_institutions': ['UTSG']
     }
 
     def setup_class(self):
