@@ -14,6 +14,7 @@ class SubInstitutionList(hooky.List):
     updated when the list is modified. This is done by intercepting calls to
     `append` and `remove`.
     """
+
     # Private Instance Attributes:
     #   _institution: The institution whose sub-institutions this list
     #       represents.
@@ -30,7 +31,7 @@ class SubInstitutionList(hooky.List):
         super().__init__(self._institution._sub_institutions, **kwargs)
 
     def _after_add(self, key: Any, item: Any) -> None:
-        """Called after an item is added to the list.
+        """Call after an item is added to the list.
 
         This will set the parent of the added institution to the institution
         that this list was created for.
@@ -40,7 +41,7 @@ class SubInstitutionList(hooky.List):
         item.parent = self._institution
 
     def _after_remove(self, key: Any, item: Any) -> None:
-        """Called after an item is removed from the list.
+        """Call after an item is removed from the list.
 
         This will set the parent of the removed institution to None.
         """
@@ -278,7 +279,7 @@ class Institution(Document):
         """
         def _helper(institution: 'Institution', prefix: str = '',
                     is_last: bool = True) -> None:
-            """Helper function for print_hierarchy.
+            """Print the hierarchy starting from the given institution.
 
             Args:
                 institution: The root of the institution hierarchy.
