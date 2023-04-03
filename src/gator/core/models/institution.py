@@ -1,6 +1,6 @@
 """Model definitions for data about an academic institution."""
 from queue import Queue
-from typing import Optional, Any
+from typing import Any, Optional
 
 import hooky
 import mongoengine
@@ -324,8 +324,8 @@ class Institution(Document):
         parent_code = self.parent.code if self.parent is not None else None
         sub_inst_codes = [inst.code for inst in self.sub_institutions]
         return f'Institution(code={self.code!r}, name={self.name!r}, ' \
-                f'type={self.type!r}, parent={parent_code!r}, ' \
-                f'sub_institutions={sub_inst_codes!r})'
+            f'type={self.type!r}, parent={parent_code!r}, ' \
+            f'sub_institutions={sub_inst_codes!r})'
 
 
 class Building(Document):

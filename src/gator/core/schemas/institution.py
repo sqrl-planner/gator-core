@@ -32,4 +32,3 @@ class LocationSchema(ModelSchema):
         """Meta class for LocationSchema."""
 
         model = institution.Location
-
