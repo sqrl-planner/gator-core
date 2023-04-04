@@ -1,4 +1,5 @@
 target = "src/gator/_vendor"
 packages = [
-    "git+https://github.com/sqrl-planner/marshmallow-mongoengine.git@feat/enum-support"
+    "git+https://github.com/sqrl-planner/marshmallow-mongoengine.git@feat/enum-support",
+    "git+https://github.com/sqrl-planner/hooky.git@master",
 ]

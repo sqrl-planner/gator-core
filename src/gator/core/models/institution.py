@@ -1,14 +1,15 @@
 """Model definitions for data about an academic institution."""
 from queue import Queue
-from typing import Any, Optional
+from typing import Any, List, Optional
 
-import hooky
 import mongoengine
 from mongoengine import Document, EmbeddedDocument, fields
 
+import gator._vendor.hooky as hooky
 
-class SubInstitutionList(hooky.List):
-    """A list of sub-institutions for an institution.
+
+class _SubInstitutionsList(hooky.List, List['Institution']):
+    """A list of sub-institutions for a wrapped institution.
 
     This list is used to ensure that the parent of each sub-institution is
     updated when the list is modified. This is done by intercepting calls to
@@ -16,7 +17,7 @@ class SubInstitutionList(hooky.List):
     """
 
     # Private Instance Attributes:
-    #   _institution: The institution whose sub-institutions this list
+    #   _institution: The wrapped institution whose sub-institutions this list
     #       represents.
     _institution: 'Institution'
 
@@ -24,8 +25,8 @@ class SubInstitutionList(hooky.List):
         """Initialize a list of sub-institutions.
 
         Args:
-            institution: The institution whose sub-institutions this list
-                represents.
+            institution: The wrapped institution whose sub-institutions this
+                list represents.
         """
         self._institution = institution
         super().__init__(self._institution._sub_institutions, **kwargs)
@@ -36,15 +37,17 @@ class SubInstitutionList(hooky.List):
         This will set the parent of the added institution to the institution
         that this list was created for.
         """
+        super()._after_add(key, item)
         assert isinstance(key, int), 'Only integer keys are allowed'
         assert isinstance(item, Institution), 'Only institutions are allowed'
         item.parent = self._institution
 
-    def _after_remove(self, key: Any, item: Any) -> None:
+    def _after_del(self, key: Any, item: Any) -> None:
         """Call after an item is removed from the list.
 
         This will set the parent of the removed institution to None.
         """
+        super()._after_del(key, item)
         assert isinstance(key, int), 'Only integer keys are allowed'
         assert isinstance(item, Institution), 'Only institutions are allowed'
         item.parent = None
@@ -143,7 +146,7 @@ class Institution(Document):
             new_parent._sub_institutions.append(self)
 
     @property
-    def sub_institutions(self) -> SubInstitutionList:
+    def sub_institutions(self) -> _SubInstitutionsList:
         """Get the sub-institutions of this institution.
 
         >>> foo = Institution(code='foo', name='Foo', type='university')
@@ -158,7 +161,7 @@ class Institution(Document):
         >>> baz.parent  # doctest: +ELLIPSIS
         Institution(code='foo', ...)
         """
-        return SubInstitutionList(self, hook_when_init=False)
+        return _SubInstitutionsList(self, hook_when_init=False)
 
     @sub_institutions.setter
     def sub_institutions(self, new_sub_institutions: list['Institution']) \
@@ -169,7 +172,9 @@ class Institution(Document):
             new_sub_institutions: The new sub-institutions of this
                 institution.
         """
-        self._sub_institutions = new_sub_institutions
+        self._sub_institutions.clear()
+        for sub_inst in new_sub_institutions:
+            self.sub_institutions.append(sub_inst)
 
     def find_children(self, institution_type: str) -> list['Institution']:
         """Find all sub-institutions of the given type.
@@ -206,11 +211,12 @@ class Institution(Document):
         return children
 
     def find_parent(self, institution_type: str) -> Optional['Institution']:
-        """Find the first parent institution of the given type.
+        """Find the first strictly parent institution of the given type.
 
         This function recursively searches through all parent institutions of
         this institution, performing a queue-based breadth-first search, and
-        returns the first institution of the given type.
+        returns the first institution of the given type. This function does not
+        include this institution in the search.
 
         Args:
             institution_type: The type of institution to search for. For
@@ -231,7 +237,7 @@ class Institution(Document):
                 continue
             visited.add(curr.code)
 
-            if curr.type == institution_type:
+            if curr.type == institution_type and curr != self:
                 return curr
 
             if curr.parent is not None:
