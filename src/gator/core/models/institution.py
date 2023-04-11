@@ -93,13 +93,16 @@ class Institution(Document):
 
     def __init__(self, **kwargs: Any) -> None:
         """Initialize an institution."""
-        # Don't allow the user to set the parent or sub-institutions directly
-        assert '_parent' not in kwargs, 'Use `parent` instead of `_parent`'
-        assert '_sub_institutions' not in kwargs, \
-            'Use `sub_institutions` instead of `_sub_institutions`'
-
+        # Prefer the parent and sub-institutions arguments over the
+        # _parent and _sub_institutions arguments
         parent = kwargs.pop('parent', None)
+        if parent is None:
+            parent = kwargs.pop('_parent', None)
+
         sub_institutions = kwargs.pop('sub_institutions', [])
+        if not sub_institutions:
+            sub_institutions = kwargs.pop('_sub_institutions', [])
+
         super().__init__(**kwargs)
 
         # Set the parent and sub-institutions
