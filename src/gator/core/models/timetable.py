@@ -580,7 +580,7 @@ class Course(Document):
     """An instance of a course offered at UofT for a specific term.
 
     Instance Attributes:
-        id: A unique identifier for this course.
+        uuid: A unique identifier for this course.
         code: The code of this course.
         name: The name of this course.
         sections: A list of sections available for this course.
@@ -604,7 +604,7 @@ class Course(Document):
         notes: A list of HTML strings.
     """
 
-    id: str = fields.StringField(primary_key=True)  # type: ignore
+    uuid: str = fields.StringField(primary_key=True)  # type: ignore
     code: str = fields.StringField()  # type: ignore
     name: str = fields.StringField()  # type: ignore
     sections: list[Section] = fields.EmbeddedDocumentListField('Section')  # type: ignore

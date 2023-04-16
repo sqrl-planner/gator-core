@@ -338,7 +338,7 @@ class TestCourseSchema:
         notes=['This course is only offered for students in the XYZ program.']
     )
     DUMPED_COURSE = {
-        'id': COURSE.id,
+        'uuid': COURSE.uuid,
         'code': COURSE.code,
         'name': COURSE.name,
         'sections': [TestSectionSchema.DUMPED_SECTION],
