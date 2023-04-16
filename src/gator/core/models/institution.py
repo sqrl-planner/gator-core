@@ -67,7 +67,7 @@ class Institution(Document):
             `campus`.
     """
 
-    code: str = fields.StringField(unique=True, primary_key=True)  # type: ignore
+    code: str = fields.StringField(primary_key=True)  # type: ignore
     name: str = fields.StringField(required=True)  # type: ignore
     type: str = fields.StringField(required=True)  # type: ignore
 
@@ -347,7 +347,7 @@ class Building(Document):
         map_url: The URL of this building's map. Can be None if unknown.
     """
 
-    code: str = fields.StringField(unique=True, primary_key=True)  # type: ignore
+    code: str = fields.StringField(primary_key=True)  # type: ignore
     institution: Institution = fields.ReferenceField(Institution, required=True)  # type: ignore
     name: Optional[str] = fields.StringField(null=True, default=None)  # type: ignore
     map_url: Optional[str] = fields.URLField(null=True, default=None)  # type: ignore

@@ -568,7 +568,7 @@ class CategoricalRequirement(EmbeddedDocument):
             one institution in this list.
     """
 
-    code: str = fields.StringField(unique=True, primary_key=True)  # type: ignore
+    code: str = fields.StringField(primary_key=True)  # type: ignore
     type: str = fields.StringField(required=True, choices=['breadth', 'distribution'])  # type: ignore
     name: str = fields.StringField()  # type: ignore
     description: str = fields.StringField()  # type: ignore
