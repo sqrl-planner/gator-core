@@ -62,14 +62,15 @@ class Institution(Document):
 
     Instance Attributes:
         code: A unique string representing this institution.
-        name: The full name of this institution.
         type: The type of this institution. For example, `university` or
             `campus`.
+        name: The full name of this institution. Can be None if the name is
+            unknown.
     """
 
     code: str = fields.StringField(primary_key=True)  # type: ignore
-    name: str = fields.StringField(required=True)  # type: ignore
     type: str = fields.StringField(required=True)  # type: ignore
+    name: Optional[str] = fields.StringField(null=True)  # type: ignore
 
     # Private Instance Attributes:
     #   _parent: The parent institution of this institution. For example, the
