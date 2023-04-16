@@ -503,8 +503,8 @@ class Section(EmbeddedDocument):
 
     teaching_method: TeachingMethod = fields.EnumField(TeachingMethod, required=True)  # type: ignore
     section_number: str = fields.StringField(required=True)  # type: ignore
-    meetings: list[SectionMeeting] = fields.EmbeddedDocumentListField('SectionMeeting', required=True)  # type: ignore
-    instructors: list[Instructor] = fields.EmbeddedDocumentListField('Instructor', required=True)  # type: ignore
+    meetings: list[SectionMeeting] = fields.EmbeddedDocumentListField('SectionMeeting', default=list)  # type: ignore
+    instructors: list[Instructor] = fields.EmbeddedDocumentListField('Instructor', default=list)  # type: ignore
     delivery_modes: list[SectionDeliveryMode] = fields.ListField(
         fields.EnumField(SectionDeliveryMode), required=True)  # type: ignore
     subtitle: Optional[str] = fields.StringField(null=True, default=None)  # type: ignore
