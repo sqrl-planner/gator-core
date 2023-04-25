@@ -1,8 +1,7 @@
 """Model definitions for data about an academic institution."""
 from queue import Queue
-from typing import Any, List, Optional
+from typing import List, Optional
 
-import gator._vendor.hooky as hooky
 import mongoengine
 from mongoengine import Document, EmbeddedDocument, fields
 
