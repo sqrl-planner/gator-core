@@ -1,4 +1,4 @@
 [flake8]
 ignore=E501
-exclude = tests/*
+exclude = tests/* src/gator/_vendor/*
 max-complexity = 10

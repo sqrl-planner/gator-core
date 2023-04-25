@@ -7,9 +7,10 @@ license = "MIT"
 readme = "README.md"
 
 packages = [
-    { include = "gator", from = "src" }
+    { include = "gator/**/*", from = "src" }
 ]
 include = [
+    { path = "src/gator/_vendor/**/*", format = ["sdist", "wheel"] },
     { path = "tests", format = "sdist" }
 ]
 exclude = [
@@ -21,7 +22,6 @@ exclude = [
 python = "^3.9"
 mongoengine = ">=0.20"
 marshmallow = "^3.17.0"
-marshmallow-enum = "^1.5.1"
 requests = "^2.28.2"
 bs4 = "^0.0.1"
 routes = "^2.5.1"
@@ -33,6 +33,13 @@ pytest-cov = "^3.0.0"
 pytest-mock = "^3.7.0"
 pytest-httpserver = "^1.0.4"
 
+[tool.poetry.group.dev.dependencies]
+mypy = "^1.0.1"
+mongo-types = "^0.15.1"
+vendorize = "^0.3.0"
+mongomock = "^4.1.2"
+sybil = "^5.0.0"
+
 [tool.poetry-dynamic-versioning]
 enable = true
 
@@ -42,7 +49,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.pyright]
 include = ["gator/**", "tests/**"]
-exclude = ["**/__pycache__"]
+exclude = ["**/__pycache__", "src/gator/_vendor/**"]
 
 typeCheckingMode = "basic"
 pythonVersion = "3.9"

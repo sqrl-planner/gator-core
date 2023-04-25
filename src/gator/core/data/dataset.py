@@ -1,19 +1,23 @@
 # type: ignore
-"""Base classes for a datasets."""
+"""Base classes for datasets."""
 import fnmatch
 from abc import ABC, abstractclassmethod, abstractmethod, abstractproperty
 from typing import Any, Iterator, Optional, Type, Union
 
-from gator.core.models.common import Record
+from mongoengine import Document
+
 from gator.core.models.timetable import Session
 
 
 class Dataset(ABC):
-    """A dataset that returns :class:`gator.models.Record` instances.
+    """A dataset that converts free-form data into mongoengine documents.
 
-    All subclasses should implement the `get` method to return a list of
-    records. The `slug`, `name`, and `description` properties should also be
-    implemented to provide metadata about the dataset.
+    All subclasses should implement functionality for a) pulling data from a
+    source (e.g. a database, a file, or an API) and returning it as a list of
+    `(id, data)` records via the `get` method, and b) processing each record
+    into a :class:`mongoengine.Document` object via the `process` method.
+    The `slug`, `name`, and `description` properties should also be implemented
+    to provide metadata about the dataset.
     """
 
     @abstractproperty
@@ -32,45 +36,72 @@ class Dataset(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def get(self) -> Iterator[Record]:
-        """Return an iterator that lazily yields records from this dataset."""
+    def get(self) -> Iterator[tuple[str, Any]]:
+        """Return an iterator that lazily yields `(id, data)` records.
+
+        The `id` should be a unique identifier for the record, and the `data`
+        can be any hashable object. A hash of the `data` object will be compared
+        with a hash stored in the database for the record with the given `id`.
+        """
+        raise NotImplementedError()
+
+    @abstractmethod
+    def process(self, id: str, data: Any) -> Document:
+        """Process the given record into a :class:`mongoengine.Document`.
+
+        Args:
+            id: The unique identifier for the record.
+            data: The data for the record.
+        """
         raise NotImplementedError()
 
 
 class SessionalDataset(Dataset):
-    """A dataset that is specific to a session.
+    """A dataset that is specific to one or more sessions.
 
-    For example, a dataset of courses offered in a particular session, or a
-    dataset of clubs that are active in a particular session.
+    For example, a dataset of courses offered in a set of particular sessions,
+    or a dataset of clubs that are active in a single session.
 
-    All subclasses must implement the `_get_latest_session` method to return
-    the most up-to-date session for this dataset.
+    All subclasses must implement the `_get_latest_sessions` method to return
+    the most up-to-date sessions for this dataset.
 
     Instance Attributes:
-        session: The session that this dataset is specific to.
+        sessions: The sessions that this dataset is specific to.
     """
 
-    session: Session
+    sessions: list[Session]
 
-    def __init__(self, session: Optional[Union[Session, str]] = None) -> None:
+    def __init__(self,
+                 sessions: Optional[list[Union[str, Session]]] = None,
+                 session: Optional[Union[str, Session]] = None) -> None:
         """Initialize a SessionalDataset.
 
         Args:
-            session: An optional session that can be supplied instead of the
-                default. This can be an instance of Session or a string providing
-                the session code. If None, the latest session will be used.
+            sessions: The sessions that this dataset tracks. Each element can
+                either be a session code, which will be parsed into a Session
+                object, or a Session object itself. If no sessions are provided,
+                the most up-to-date sessions will be used.
+            session: Instead of providing a list of sessions, a single session
+                can be provided. This is equivalent to providing a list with a
+                single session. If both `sessions` and `session` are provided,
+                `sessions` will take precedence.
         """
         super().__init__()
-        if isinstance(session, str):
-            self.session = Session.parse(session)
-        elif session is None:
-            self.session = self._get_latest_session()
+        # Prefer the `sessions` argument. In the case it is None, use the
+        # `session` argument if it is provided, otherwise default to None.
+        sessions = sessions or ([session] if session is not None else None)
+        if sessions is None:
+            # Use the most up-to-date sessions
+            self.sessions = self._get_latest_sessions()
         else:
-            self.session = session
+            # Parse the sessions
+            self.sessions = [
+                Session.from_code(session) if not isinstance(session, Session) else session
+                for session in sessions]
 
     @abstractclassmethod
-    def _get_latest_session(cls) -> Session:
-        """Return the most up-to-date session for this dataset.
+    def _get_latest_sessions(cls) -> list[Session]:
+        """Return the most up-to-date sessions for this dataset.
 
         Raise a ValueError if the session could not be found.
         """

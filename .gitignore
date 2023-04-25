@@ -379,3 +379,6 @@ cython_debug/
 
 # VS Code
 .vscode/*
+
+# Vendor
+src/gator/_vendor/
