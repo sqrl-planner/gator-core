@@ -10,7 +10,7 @@ packages = [
     { include = "gator/**/*", from = "src" }
 ]
 include = [
-  "src/gator/_vendor/**/*",
+    "src/gator/_vendor/**/*",
     { path = "tests", format = "sdist" }
 ]
 exclude = [
@@ -48,7 +48,7 @@ requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.pyright]
-include = ["gator/**", "tests/**", "typings/**"]
+include = ["gator/**", "tests/**"]
 exclude = ["**/__pycache__", "src/gator/_vendor/**"]
 
 typeCheckingMode = "basic"
