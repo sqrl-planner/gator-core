@@ -2,10 +2,9 @@
 from queue import Queue
 from typing import Any, List, Optional
 
+import gator._vendor.hooky as hooky
 import mongoengine
 from mongoengine import Document, EmbeddedDocument, fields
-
-import gator._vendor.hooky as hooky
 
 
 class Institution(Document):
