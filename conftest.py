@@ -26,7 +26,7 @@ def mongo_client(request: pytest.FixtureRequest) -> mongomock.MongoClient:
     # Explicitly set the UUID representation to standard, since mongomock
     # defaults to Python's legacy representation which will raise a warning
     connection = connect(db=TEST_DB, host='mongomock://localhost',
-                          uuidRepresentation='standard')
+                         uuidRepresentation='standard')
     # Add a handler to drop the test database after the test is complete
     request.addfinalizer(lambda: connection.drop_database(TEST_DB))
 
