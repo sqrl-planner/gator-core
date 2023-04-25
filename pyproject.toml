@@ -10,7 +10,7 @@ packages = [
     { include = "gator/**/*", from = "src" }
 ]
 include = [
-    "src/gator/_vendor/**/*",
+    { path = "src/gator/_vendor/**/*", format = ["sdist", "wheel"] },
     { path = "tests", format = "sdist" }
 ]
 exclude = [
