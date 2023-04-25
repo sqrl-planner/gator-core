@@ -10,7 +10,7 @@ packages = [
     { include = "gator/**/*", from = "src" }
 ]
 include = [
-    "src/gator/_vendor/**/*",
+  "src/gator/_vendor/**/*",
     { path = "tests", format = "sdist" }
 ]
 exclude = [
@@ -37,6 +37,8 @@ pytest-httpserver = "^1.0.4"
 mypy = "^1.0.1"
 mongo-types = "^0.15.1"
 vendorize = "^0.3.0"
+mongomock = "^4.1.2"
+sybil = "^5.0.0"
 
 [tool.poetry-dynamic-versioning]
 enable = true

@@ -17,72 +17,64 @@ class TestInstitutionSchema:
         DUMPED_UNI_INSTITUTION: The dumped data for `UNI_INSTITUTION`.
     """
 
-    FACULTY_INSTITUTION: models.Institution = models.Institution(
-        code='ARTSC',
-        name='Faculty of Arts and Science',
-        type='faculty',
-        parent=None,
-    )
-    CAMPUS_INSTITUTION: models.Institution = models.Institution(
-        code='UTSG',
-        name='St. George Campus',
-        type='campus',
-    )
     UNI_INSTITUTION: models.Institution = models.Institution(
         code='UofT',
         name='University of Toronto',
         type='university',
     )
+    CAMPUS_INSTITUTION: models.Institution = models.Institution(
+        code='UTSG',
+        name='St. George Campus',
+        type='campus',
+        parent=UNI_INSTITUTION,
+    )
+    FACULTY_INSTITUTION: models.Institution = models.Institution(
+        code='ARTSC',
+        name='Faculty of Arts and Science',
+        type='faculty',
+        parent=CAMPUS_INSTITUTION,
+    )
+
+    DUMPED_UNI_INSTITUTION: dict = {
+        'code': 'UofT',
+        'name': 'University of Toronto',
+        'type': 'university',
+    }
     DUMPED_FACULTY_INSTITUTION: dict = {
         'code': 'ARTSC',
         'name': 'Faculty of Arts and Science',
         'type': 'faculty',
-        '_parent': 'UTSG'
+        'parent': 'UTSG'
     }
     DUMPED_CAMPUS_INSTITUTION: dict = {
         'code': 'UTSG',
         'name': 'St. George Campus',
         'type': 'campus',
-        '_parent': 'UofT',
-        '_sub_institutions': ['ARTSC']
-    }
-    DUMPED_UNI_INSTITUTION: dict = {
-        'code': 'UofT',
-        'name': 'University of Toronto',
-        'type': 'university',
-        '_sub_institutions': ['UTSG']
+        'parent': 'UofT',
     }
 
     def setup_class(self):
         """Set up the tests."""
         self.schema = schemas.InstitutionSchema()
-        # Setup the parent-child relationships
-        self.FACULTY_INSTITUTION.parent = self.CAMPUS_INSTITUTION
-        self.CAMPUS_INSTITUTION.parent = self.UNI_INSTITUTION
-        self.UNI_INSTITUTION.parent = None
-
-        # Setup the sub-institution relationships
-        self.FACULTY_INSTITUTION.sub_institutions = []
-        self.CAMPUS_INSTITUTION.sub_institutions.append(self.FACULTY_INSTITUTION)
-        self.UNI_INSTITUTION.sub_institutions.append(self.CAMPUS_INSTITUTION)
+        # Save the institution to the database
+        self.UNI_INSTITUTION.save()
+        self.CAMPUS_INSTITUTION.save()
+        self.FACULTY_INSTITUTION.save()
 
     def test_load_faculty_institution(self):
         """Test loading a faculty institution."""
-        # TODO: We need to create a test MongoDB instance to test this
-        # loaded = self.schema.load(self.DUMPED_FACULTY_INSTITUTION)
-        # assert loaded == self.FACULTY_INSTITUTION
+        loaded = self.schema.load(self.DUMPED_FACULTY_INSTITUTION)
+        assert loaded == self.FACULTY_INSTITUTION
 
     def test_load_campus_institution(self):
         """Test loading a campus institution."""
-        # TODO: We need to create a test MongoDB instance to test this
-        # loaded = self.schema.load(self.DUMPED_CAMPUS_INSTITUTION)
-        # assert loaded == self.CAMPUS_INSTITUTION
+        loaded = self.schema.load(self.DUMPED_CAMPUS_INSTITUTION)
+        assert loaded == self.CAMPUS_INSTITUTION
 
     def test_load_uni_institution(self):
         """Test loading a university institution."""
-        # TODO: We need to create a test MongoDB instance to test this
-        # loaded = self.schema.load(self.DUMPED_UNI_INSTITUTION)
-        # assert loaded == self.UNI_INSTITUTION
+        loaded = self.schema.load(self.DUMPED_UNI_INSTITUTION)
+        assert loaded == self.UNI_INSTITUTION
 
     def test_dump_faculty_institution(self):
         """Test dumping a faculty institution."""
@@ -142,9 +134,8 @@ class TestBuildingSchema:
 
     def test_load_building(self):
         """Test loading a building."""
-        # TODO: We need to create a test MongoDB instance to test this
-        # for building, datum in zip(self.BUILDINGS, self.DUMPED_BUILDINGS):
-        #     assert self.schema.load(datum) == building
+        for building, datum in zip(self.BUILDINGS, self.DUMPED_BUILDINGS):
+            assert self.schema.load(datum) == building
 
     def test_dump_building(self):
         """Test dumping a building."""
@@ -173,12 +164,14 @@ class TestLocationSchema:
     def setup_class(self):
         """Set up the tests."""
         self.schema = schemas.LocationSchema()
+        # Save the buildings to the database
+        for location in self.LOCATIONS:
+            location.building.save()
 
     def test_load_location(self):
         """Test loading a location."""
-        # TODO: We need to create a test MongoDB instance to test this
-        # for location, datum in zip(self.LOCATIONS, self.DUMPED_LOCATIONS):
-        #     assert self.schema.load(datum) == location
+        for location, datum in zip(self.LOCATIONS, self.DUMPED_LOCATIONS):
+            assert self.schema.load(datum) == location
 
     def test_dump_location(self):
         """Test dumping a location."""

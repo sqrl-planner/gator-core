@@ -153,9 +153,8 @@ class TestSectionMeetingSchema:
 
     def test_load(self) -> None:
         """Test that the schema can load a SectionMeeting object."""
-        # TODO: We need to create a test MongoDB instance to test this
-        # for section, datum in zip(self.SECTION_MEETINGS, self.DUMPED_SECTION_MEETINGS):
-        #     assert self.schema.load(datum) == section
+        for section, datum in zip(self.SECTION_MEETINGS, self.DUMPED_SECTION_MEETINGS):
+            assert self.schema.load(datum) == section
 
     def test_dump(self) -> None:
         """Test that the schema can dump a SectionMeeting object."""
@@ -262,8 +261,7 @@ class TestSectionSchema:
 
     def test_load(self) -> None:
         """Test that the schema can load a Section object."""
-        # TODO: We need to create a test MongoDB instance to test this
-        # assert self.schema.load(self.DUMPED_SECTION) == self.SECTION
+        assert self.schema.load(self.DUMPED_SECTION) == self.SECTION
 
     def test_dump(self) -> None:
         """Test that the schema can dump a Section object."""
@@ -298,8 +296,7 @@ class TestCategoricalRequirementSchema:
 
     def test_load(self) -> None:
         """Test that the schema can load a CategoricalRequirement object."""
-        # TODO: We need to create a test MongoDB instance to test this
-        # assert self.schema.load(self.DUMPED_CATEGORICAL_REQUIREMENT) == self.CATEGORICAL_REQUIREMENT
+        assert self.schema.load(self.DUMPED_CATEGORICAL_REQUIREMENT) == self.CATEGORICAL_REQUIREMENT
 
     def test_dump(self) -> None:
         """Test that the schema can dump a CategoricalRequirement object."""
@@ -360,11 +357,11 @@ class TestCourseSchema:
     def setup_class(self) -> None:
         """Initialize the test class."""
         self.schema = schemas.CourseSchema()
+        self.COURSE.save(cascade=True)
 
     def test_load(self) -> None:
         """Test that the schema can load a Course object."""
-        # TODO: We need to create a test MongoDB instance to test this
-        # assert self.schema.load(self.DUMPED_COURSE) == self.COURSE
+        assert self.schema.load(self.DUMPED_COURSE) == self.COURSE
 
     def test_dump(self) -> None:
         """Test that the schema can dump a Course object."""
