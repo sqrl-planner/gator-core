@@ -339,7 +339,7 @@ class TestCourseSchema:
         'code': COURSE.code,
         'name': COURSE.name,
         'sections': [TestSectionSchema.DUMPED_SECTION],
-        'sessions': [dumped_session for dumped_session in TestSessionSchema.DUMPED_SESSIONS[:2]],
+        'sessions': [*TestSessionSchema.DUMPED_SESSIONS[:2]],
         'term': COURSE.term.name,
         'credits': COURSE.credits,
         'institution': COURSE.institution.code,
